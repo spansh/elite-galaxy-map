@@ -70,6 +70,14 @@ describe('routeSystemsFromSpanshResult', () => {
         expect(() => validateCommand({ type: COMMAND_TYPES.setLegend, entries: routeStopLegend(systems) })).not.toThrow();
     });
 
+    it('labels the legend with the labels given, keeping the rest', () => {
+        const systems = [{ has_neutron: true }, { must_refuel: true }, {}]
+            .map((jump, index) => ({ name: `Stop ${index}`, coordinates: { x: index, y: 0, z: 0 }, ...routeStopMarker(jump) }));
+        const labels = routeStopLegend(systems, { labels: { neutronBoost: 'Boost de neutrons', other: 'Autre arrêt' } }).map(entry => entry.label);
+        expect(labels).toEqual(['Boost de neutrons', 'Refuel stop', 'Autre arrêt']);
+        expect(() => routeStopLegend(systems, { labels: { neutron: 'Boost' } })).toThrow(/unknown kinds of stop: neutron/);
+    });
+
     it('leaves the legend empty for a route with only ordinary stops', () => {
         const systems = [{}, {}].map((jump, index) => ({ name: `Stop ${index}`, coordinates: { x: index, y: 0, z: 0 }, ...routeStopMarker(jump) }));
         expect(routeStopLegend(systems)).toEqual([]);

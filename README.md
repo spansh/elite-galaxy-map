@@ -32,7 +32,7 @@ waits until the element is shown.
 | `elite-galaxy-map/spansh-loader-worker.js` | The example loader worker. |
 | `elite-galaxy-map/read-lines.js` | Its dump-reading helpers (`readLines`, `parseDumpLine`, `unpackIfGzipped`). |
 | `elite-galaxy-map/star-classes.js` | Its sorting of main star types into layers (`layerForMainStar`, `STAR_CLASS_LAYERS`). |
-| `elite-galaxy-map/spansh-route.js` | `routeSystemsFromSpanshResult`, `routeStopMarker`, `routeStopLegend` and `ROUTE_STOP_COLOURS` (also exported by the map). |
+| `elite-galaxy-map/spansh-route.js` | `routeSystemsFromSpanshResult`, `routeStopMarker`, `routeStopLegend`, `ROUTE_STOP_COLOURS` and `ROUTE_STOP_LABELS` (also exported by the map). |
 
 The source finds its font and density map with
 `new URL('../assets/...', import.meta.url)`, which bundlers follow and copy
@@ -358,6 +358,14 @@ their own route systems:
 `routeStopLegend(systems)` gives [legend](#legend) entries for the kinds of
 stop a route has, with how many of each. It gives an empty list for a route
 with only ordinary stops. The panel's route picker shows this legend.
+Its labels are in English; pass others, such as translations, by kind of
+stop, and any left out keep their English label (`ROUTE_STOP_LABELS`):
+
+```js
+routeStopLegend(systems, {
+    labels: { neutronBoost: '…', refuel: '…', neutronBoostAndRefuel: '…', other: '…' },
+});
+```
 
 Unnamed stops are drawn as small rings. When the route is seen from far away
 and rings would overlap, only some are drawn: the named ends first, then

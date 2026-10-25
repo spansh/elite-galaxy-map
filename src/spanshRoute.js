@@ -83,11 +83,19 @@ function coordinatesOfJump(jump) {
 // The kinds of stop routeStopMarker tells apart, in the order a legend lists
 // them, each with an example jump.
 const ROUTE_STOP_KINDS = Object.freeze([
-    { label: 'Neutron boost', exampleJump: { has_neutron: true } },
-    { label: 'Refuel stop', exampleJump: { must_refuel: true } },
-    { label: 'Neutron boost and refuel', exampleJump: { has_neutron: true, must_refuel: true } },
-    { label: 'Other stop', exampleJump: {} },
+    { kind: 'neutronBoost', exampleJump: { has_neutron: true } },
+    { kind: 'refuel', exampleJump: { must_refuel: true } },
+    { kind: 'neutronBoostAndRefuel', exampleJump: { has_neutron: true, must_refuel: true } },
+    { kind: 'other', exampleJump: {} },
 ]);
+
+// The legend's labels for each kind of stop, unless others are given.
+export const ROUTE_STOP_LABELS = Object.freeze({
+    neutronBoost: 'Neutron boost',
+    refuel: 'Refuel stop',
+    neutronBoostAndRefuel: 'Neutron boost and refuel',
+    other: 'Other stop',
+});
 
 // Entries for the map's legend (the legend option or setLegend command)
 // explaining the stops of a route made by routeSystemsFromSpanshResult or
@@ -98,13 +106,21 @@ const ROUTE_STOP_KINDS = Object.freeze([
 //     const systems = routeSystemsFromSpanshResult(routeResult);
 //     galaxyMap.dispatch({ type: 'highlightSystems', systems, asRoute: true, frame: true });
 //     galaxyMap.dispatch({ type: 'setLegend', entries: routeStopLegend(systems) });
-export function routeStopLegend(systems) {
+//
+// labels replaces any of ROUTE_STOP_LABELS, for example with translations:
+//
+//     routeStopLegend(systems, { labels: { neutronBoost: 'Boost de neutrons', refuel: 'Ravitaillement' } });
+export function routeStopLegend(systems, { labels = {} } = {}) {
+    const unknownKinds = Object.keys(labels).filter(kind => !(kind in ROUTE_STOP_LABELS));
+    if (unknownKinds.length > 0) {
+        throw new Error(`routeStopLegend has labels for unknown kinds of stop: ${unknownKinds.join(', ')}; known kinds are ${Object.keys(ROUTE_STOP_LABELS).join(', ')}`);
+    }
     const entries = [];
-    for (const { label, exampleJump } of ROUTE_STOP_KINDS) {
+    for (const { kind, exampleJump } of ROUTE_STOP_KINDS) {
         const marker = routeStopMarker(exampleJump);
         const count = systems.filter(system => system.shape === marker.shape && system.centreDot === marker.centreDot).length;
         if (count > 0) {
-            entries.push({ label, ...marker, count });
+            entries.push({ label: labels[kind] ?? ROUTE_STOP_LABELS[kind], ...marker, count });
         }
     }
     const hasOnlyOrdinaryStops = entries.length === 1 && entries[0].shape === undefined && entries[0].centreDot === undefined;
