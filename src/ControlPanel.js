@@ -1,4 +1,5 @@
-import { ROUTE_STOP_COLOURS, routeSystemsFromSpanshResult } from './spanshRoute.js';
+import { CENTRE_DOT_RADIUS, markerOutlineCorners } from './markerShapes.js';
+import { routeStopMarker, routeSystemsFromSpanshResult } from './spanshRoute.js';
 
 // The map's control panel, in its top left corner. It only uses the map's
 // public commands, methods and events, so anything it does a page can do
@@ -133,10 +134,10 @@ const PANEL_STYLES = `
     }
     .egm-panel-key {
         display: inline-block;
-        width: 8px;
-        height: 8px;
+        width: 12px;
+        height: 12px;
         margin: 0 4px 0 8px;
-        border-radius: 50%;
+        vertical-align: -1px;
     }
 `;
 
@@ -165,6 +166,34 @@ function buildElement(tagName, properties = {}, ...children) {
     }
     created.append(...children);
     return created;
+}
+
+// A small picture of a highlight marker, drawn as the map draws it: its
+// shape, colour and any centre dot. For the route legend.
+function buildMarkerSymbol({ colour, shape = 'circle', centreDot = false }) {
+    const svgNamespace = 'http://www.w3.org/2000/svg';
+    const symbol = document.createElementNS(svgNamespace, 'svg');
+    symbol.setAttribute('class', 'egm-panel-key');
+    symbol.setAttribute('viewBox', '-8 -8 16 16');
+    symbol.setAttribute('aria-hidden', 'true');
+    const markerRadius = 6;
+    // SVG's y points down, the map's up.
+    const corners = markerOutlineCorners(shape, markerRadius)
+        .map(corner => `${corner.x.toFixed(2)},${(-corner.y).toFixed(2)}`)
+        .join(' ');
+    const outline = document.createElementNS(svgNamespace, 'polygon');
+    outline.setAttribute('points', corners);
+    outline.setAttribute('fill', 'none');
+    outline.setAttribute('stroke', colour);
+    outline.setAttribute('stroke-width', '1.6');
+    symbol.append(outline);
+    if (centreDot) {
+        const dot = document.createElementNS(svgNamespace, 'circle');
+        dot.setAttribute('r', String(CENTRE_DOT_RADIUS * markerRadius));
+        dot.setAttribute('fill', colour);
+        symbol.append(dot);
+    }
+    return symbol;
 }
 
 export class ControlPanel {
@@ -321,23 +350,23 @@ export class ControlPanel {
             return;
         }
         this.galaxyMap.dispatch({ type: 'highlightSystems', systems, asRoute: true, showNames: 'ifRoom', frame: true });
-        const countStops = colour => systems.filter(system => system.colour === colour).length;
-        const neutronBoosts = countStops(ROUTE_STOP_COLOURS.neutronBoost);
-        const refuelStops = countStops(ROUTE_STOP_COLOURS.refuel);
-        const neutronBoostsWithRefuel = countStops(ROUTE_STOP_COLOURS.neutronBoostAndRefuel);
-        const legendEntry = (colour, text) => {
-            const swatch = buildElement('span', { className: 'egm-panel-key' });
-            swatch.style.background = colour;
-            return [swatch, text];
-        };
+        // A legend line for each kind of stop the route has, with its marker
+        // drawn as the map draws it.
+        const stopKinds = [
+            { marker: routeStopMarker({ has_neutron: true }), description: 'neutron boosts' },
+            { marker: routeStopMarker({ must_refuel: true }), description: 'refuel stops' },
+            { marker: routeStopMarker({ has_neutron: true, must_refuel: true }), description: 'neutron boosts with refuel' },
+        ];
+        const legendLines = [];
+        for (const { marker, description } of stopKinds) {
+            const stopCount = systems.filter(system => system.shape === marker.shape && system.centreDot === marker.centreDot).length;
+            if (stopCount > 0) {
+                legendLines.push(buildElement('br'), buildMarkerSymbol(marker), `${stopCount.toLocaleString()} ${description}`);
+            }
+        }
         this.routeDetails.replaceChildren(
             `${systems[0].name} to ${systems[systems.length - 1].name}, ${(systems.length - 1).toLocaleString()} jumps.`,
-            buildElement('br'),
-            ...legendEntry(ROUTE_STOP_COLOURS.neutronBoost, `${neutronBoosts} neutron boosts`),
-            ...legendEntry(ROUTE_STOP_COLOURS.refuel, `${refuelStops} refuel stops`),
-            ...(neutronBoostsWithRefuel > 0
-                ? legendEntry(ROUTE_STOP_COLOURS.neutronBoostAndRefuel, `${neutronBoostsWithRefuel} neutron boosts with refuel`)
-                : []),
+            ...legendLines,
         );
     }
 

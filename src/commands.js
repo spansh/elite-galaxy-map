@@ -8,6 +8,7 @@
 // x, y, z for each system one after another in a Float32Array.
 
 import { BACKDROP_STYLES } from './backdrop/GalaxyBackdrop.js';
+import { MARKER_SHAPE_NAMES } from './markerShapes.js';
 import { validateUserInterfaceSettings } from './userInterface.js';
 
 export const COMMAND_TYPES = Object.freeze({
@@ -38,10 +39,13 @@ export const COMMAND_TYPES = Object.freeze({
     // Anything left out stays as it is, so { type, view: 'topDown' } just
     // turns the camera to look straight down at the same point.
     moveCamera: 'moveCamera',
-    // { type, systems: [{ name, coordinates: {x, y, z}, key?, colour?, showName? }],
+    // { type, systems: [{ name, coordinates: {x, y, z}, key?, colour?, shape?, centreDot?, showName? }],
     //   asRoute?: boolean, showNames?: boolean | 'ifRoom', frame?: boolean, view?: 'angled' | 'topDown' }
     // Shows each system with a ring and its name, replacing earlier
     // highlights. With asRoute, a line joins them in the order given.
+    // A system's shape ('circle', 'diamond', 'square' or 'triangle') and
+    // centreDot (a dot in the ring) mark kinds of system out without relying
+    // on colour.
     // showNames: true names every system, moving labels to make room;
     // 'ifRoom' names those whose label fits beside them; false names none.
     // A system's own showName overrides it. With frame, the camera moves to
@@ -171,6 +175,12 @@ export function validateCommand(command) {
             }
             if (!hasCoordinates(system?.coordinates)) {
                 throw new Error(`highlightSystems system ${index} (${system?.name ?? 'unnamed'}) needs coordinates with numbers for x, y and z`);
+            }
+            if (system.shape !== undefined && !MARKER_SHAPE_NAMES.includes(system.shape)) {
+                throw new Error(`highlightSystems system ${index} (${system.name ?? 'unnamed'}) shape must be ${MARKER_SHAPE_NAMES.join(', ')}, not ${JSON.stringify(system.shape)}`);
+            }
+            if (system.centreDot !== undefined && typeof system.centreDot !== 'boolean') {
+                throw new Error(`highlightSystems system ${index} (${system.name ?? 'unnamed'}) centreDot must be true or false`);
             }
         });
     }

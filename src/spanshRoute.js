@@ -19,8 +19,8 @@
 //
 // The start and end are always named; with showNames: 'ifRoom' every other
 // stop is named where its label fits, and otherwise shows its name on hover.
-// Neutron boosts, refuel stops and stops that are both get their own ring
-// colours (see routeStopColour).
+// Neutron boosts and refuel stops are marked out in ways that don't rely on
+// colour alone (see routeStopMarker).
 
 export const ROUTE_STOP_COLOURS = Object.freeze({
     neutronBoost: '#7cc4ff',
@@ -28,24 +28,33 @@ export const ROUTE_STOP_COLOURS = Object.freeze({
     neutronBoostAndRefuel: '#d49cff',
 });
 
-// The ring colour for one jump of a Spansh route: a neutron boost (has_neutron
-// in the exact plotter, neutron_star in the neutron plotter), a refuel stop
-// (must_refuel), both, or undefined for an ordinary stop, which then gets the
-// map's highlight colour. Pages building their own route systems can use it
-// to colour stops the same way.
-export function routeStopColour(jump) {
+// How one jump of a Spansh route is marked, as fields to add to its system:
+//
+//   neutron boost              a diamond                  (blue)
+//   refuel stop                a circle with a centre dot (green)
+//   neutron boost and refuel   a diamond with a centre dot (purple)
+//   any other stop             {} (a plain circle in the highlight colour)
+//
+// The shape says whether it is a neutron boost and the dot whether it is a
+// refuel stop, so each can be read without telling colours apart. A neutron
+// boost is has_neutron in the exact plotter and neutron_star in the neutron
+// plotter; a refuel stop is must_refuel. Pages building their own route
+// systems can use it to mark stops the same way:
+//
+//     const system = { name, coordinates, ...routeStopMarker(jump) };
+export function routeStopMarker(jump) {
     const isNeutronBoost = jump.has_neutron === true || jump.neutron_star === true;
     const mustRefuel = jump.must_refuel === true;
     if (isNeutronBoost && mustRefuel) {
-        return ROUTE_STOP_COLOURS.neutronBoostAndRefuel;
+        return { colour: ROUTE_STOP_COLOURS.neutronBoostAndRefuel, shape: 'diamond', centreDot: true };
     }
     if (isNeutronBoost) {
-        return ROUTE_STOP_COLOURS.neutronBoost;
+        return { colour: ROUTE_STOP_COLOURS.neutronBoost, shape: 'diamond' };
     }
     if (mustRefuel) {
-        return ROUTE_STOP_COLOURS.refuel;
+        return { colour: ROUTE_STOP_COLOURS.refuel, centreDot: true };
     }
-    return undefined;
+    return {};
 }
 
 function findListOfJumps(routeResult) {
@@ -81,13 +90,9 @@ export function routeSystemsFromSpanshResult(routeResult) {
         if (coordinates === null) {
             throw new Error(`Jump ${jumpIndex} (${jump.name ?? jump.system ?? 'unnamed'}) has no coordinates`);
         }
-        const system = { name: jump.name ?? jump.system, coordinates };
+        const system = { name: jump.name ?? jump.system, coordinates, ...routeStopMarker(jump) };
         if (jump.id64 !== undefined) {
             system.key = jump.id64;
-        }
-        const colour = routeStopColour(jump);
-        if (colour !== undefined) {
-            system.colour = colour;
         }
         return system;
     });

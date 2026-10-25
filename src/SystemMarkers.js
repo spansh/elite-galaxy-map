@@ -1,5 +1,5 @@
 import {
-    BufferAttribute, BufferGeometry, Color, DoubleSide, Group, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, PlaneGeometry, RingGeometry,
+    BufferAttribute, BufferGeometry, Color, DoubleSide, Group, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, PlaneGeometry,
 } from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
@@ -8,6 +8,7 @@ import { Text } from 'troika-three-text';
 import { galacticToScene } from './coordinates.js';
 import { formatGridCoordinates } from './gridMaths.js';
 import { chooseRingsToDraw, placeLabels } from './labelPlacement.js';
+import { createCentreDotGeometry, createMarkerOutlineGeometry, hasDistinctMarker } from './markerShapes.js';
 import { RouteArrows } from './RouteArrows.js';
 
 // The ring and name shown on the hovered system, and the ring, name,
@@ -16,10 +17,11 @@ import { RouteArrows } from './RouteArrows.js';
 // look the same size wherever the camera is.
 
 // A dark halo behind a ring, so the ring stands out against bright stars.
-// It is a child of the ring, so it follows its size and visibility.
-function addDarkBacking(ring) {
+// It is a child of the ring, so it follows its size and visibility. Behind a
+// centre dot it is filled in, so the dot stands out too.
+function addDarkBacking(ring, shape, isSolid) {
     const backing = new Mesh(
-        new RingGeometry(0.62, 1.22, 48),
+        createMarkerOutlineGeometry(shape, { grow: 0.21, solid: isSolid }),
         new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.55, depthTest: false, depthWrite: false, side: DoubleSide }),
     );
     backing.renderOrder = ring.renderOrder - 0.5;
@@ -27,12 +29,19 @@ function addDarkBacking(ring) {
     return backing;
 }
 
-function createRing(colour, opacity) {
+// A ring of radius 1, in one of the shapes in markerShapes.js. withCentreDot
+// adds a dot in the middle, a child of the ring sharing its material.
+function createRing(colour, opacity, { shape = 'circle', withCentreDot = false } = {}) {
     const ring = new Mesh(
-        new RingGeometry(0.82, 1, 48),
+        createMarkerOutlineGeometry(shape),
         new MeshBasicMaterial({ color: new Color(colour), transparent: true, opacity, depthTest: false, depthWrite: false, side: DoubleSide }),
     );
     ring.renderOrder = 100;
+    if (withCentreDot) {
+        const centreDot = new Mesh(createCentreDotGeometry(), ring.material);
+        centreDot.renderOrder = ring.renderOrder;
+        ring.add(centreDot);
+    }
     return ring;
 }
 
@@ -88,7 +97,7 @@ function createLabel(fontUrl, colour, renderOrder) {
 }
 
 class SystemMarker {
-    constructor({ fontUrl, colour, ringOpacity, ringPixelRadius, showCoordinates, showDropLine }) {
+    constructor({ fontUrl, colour, ringOpacity, ringPixelRadius, showCoordinates, showDropLine, shape = 'circle', withCentreDot = false }) {
         this.ringPixelRadius = ringPixelRadius;
         this.showCoordinates = showCoordinates;
         this.showDropLine = showDropLine;
@@ -100,8 +109,8 @@ class SystemMarker {
         // Everything that keeps a constant on-screen size, facing the camera.
         this.billboard = new Group();
         this.sceneObject.add(this.billboard);
-        this.ring = createRing(colour, ringOpacity);
-        this.ringBacking = addDarkBacking(this.ring);
+        this.ring = createRing(colour, ringOpacity, { shape, withCentreDot });
+        this.ringBacking = addDarkBacking(this.ring, shape, withCentreDot);
         this.billboard.add(this.ring);
 
         this.nameLabel = createLabel(fontUrl, colour, 101);
@@ -230,10 +239,11 @@ class SystemMarker {
     }
 
     dispose() {
-        this.ring.geometry.dispose();
-        this.ring.material.dispose();
-        this.ringBacking.geometry.dispose();
-        this.ringBacking.material.dispose();
+        // The ring's children (its backing and any centre dot) included.
+        this.ring.traverse(part => {
+            part.geometry.dispose();
+            part.material.dispose();
+        });
         this.nameLabel.dispose();
         this.coordinatesLabel?.dispose();
         for (const plate of [this.nameLabelPlate, this.coordinatesLabelPlate]) {
@@ -284,8 +294,11 @@ export class SystemMarkers {
     //   'ifRoom'  named only where the label fits beside the system without
     //             covering anything, such as stops along a long route
     //   false     never named (the name still shows on hover)
-    // Each system may give its own colour. With asRoute, a line joins the
-    // systems in the order given. Replaces any earlier highlights.
+    // Each system may give its own colour, a shape for its ring (see
+    // markerShapes.js) and a dot in the middle (centreDot), so kinds of
+    // system can be told apart without relying on colour. With asRoute, a
+    // line joins the systems in the order given. Replaces any earlier
+    // highlights.
     // Returns a promise that resolves when all the names are ready to draw.
     setHighlightedSystems(systems, { asRoute = false, showNames = true } = {}) {
         for (const marker of this.highlightMarkers) {
@@ -297,15 +310,20 @@ export class SystemMarkers {
             this.createRouteLine(systems);
         }
         this.highlightMarkers = systems.map(system => {
+            const isNamedAlways = (system.showName ?? showNames) === true;
             const marker = new SystemMarker({
                 fontUrl: this.fontUrl,
                 colour: system.colour ?? this.highlightColour,
                 ringOpacity: 0.9,
                 // Stops that are not named (most of a long route) get
-                // smaller rings, so the route reads as a line of dots.
-                ringPixelRadius: (system.showName ?? showNames) === true ? 8 : 5,
+                // smaller rings, so the route reads as a line of dots;
+                // marked out stops a little less small, so their shape and
+                // centre dot can still be made out.
+                ringPixelRadius: isNamedAlways ? 8 : (hasDistinctMarker(system) ? 6.5 : 5),
                 showCoordinates: false,
                 showDropLine: false,
+                shape: system.shape,
+                withCentreDot: system.centreDot === true,
             });
             marker.namingRule = system.showName ?? showNames;
             marker.namedAlways = marker.namingRule === true;
@@ -318,7 +336,7 @@ export class SystemMarkers {
     // Moves highlight names up or down so they don't cover each other, the
     // selection's labels, or any ring. The selection keeps its place; the
     // highlights are placed most important first (see importance below), so
-    // a route's named start and end, then its coloured stops, get the best
+    // a route's named start and end, then its marked out stops, get the best
     // spots, and among equals earlier systems come first.
     // otherObstacles are extra screen areas names should keep clear of, such
     // as the grid's coordinate label.
@@ -327,7 +345,8 @@ export class SystemMarkers {
         const labelRequests = [];
         const labelledMarkers = [];
         // Most important first: the selection, named highlights (such as a
-        // route's start and end), coloured stops, then the rest in order.
+        // route's start and end), stops marked out by colour, shape or centre
+        // dot, then the rest in order.
         const importance = marker => {
             if (marker === this.selectionMarker) {
                 return 0;
@@ -335,7 +354,7 @@ export class SystemMarkers {
             if (marker.namedAlways) {
                 return 1;
             }
-            return marker.system?.colour !== undefined ? 2 : 3;
+            return hasDistinctMarker(marker.system) ? 2 : 3;
         };
         const allMarkers = [this.selectionMarker, ...this.highlightMarkers]
             .map((marker, order) => ({ marker, order }))

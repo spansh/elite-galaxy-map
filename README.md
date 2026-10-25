@@ -32,7 +32,7 @@ waits until the element is shown.
 | `elite-galaxy-map/spansh-loader-worker.js` | The example loader worker. |
 | `elite-galaxy-map/read-lines.js` | Its dump-reading helpers (`readLines`, `parseDumpLine`, `unpackIfGzipped`). |
 | `elite-galaxy-map/star-classes.js` | Its sorting of main star types into layers (`layerForMainStar`, `STAR_CLASS_LAYERS`). |
-| `elite-galaxy-map/spansh-route.js` | `routeSystemsFromSpanshResult`, `routeStopColour` and `ROUTE_STOP_COLOURS` (also exported by the map). |
+| `elite-galaxy-map/spansh-route.js` | `routeSystemsFromSpanshResult`, `routeStopMarker` and `ROUTE_STOP_COLOURS` (also exported by the map). |
 
 The source finds its font and density map with
 `new URL('../assets/...', import.meta.url)`, which bundlers follow and copy
@@ -279,14 +279,20 @@ To change them later:
 galaxyMap.dispatch({ type: 'highlightSystems', systems: routeSystems, asRoute: true, frame: true, view: 'topDown' });
 ```
 
-A system may also carry `key` (returned when it is clicked) and `colour`.
+A system may also carry `key` (returned when it is clicked), `colour`, and
+two marks that set kinds of system apart without relying on colour:
+
+- `shape`: the ring's shape, `'circle'` (the default), `'diamond'`,
+  `'square'` or `'triangle'` (`MARKER_SHAPE_NAMES`).
+- `centreDot`: `true` adds a dot in the middle of the ring.
+
 Highlighted systems can be clicked to select them even when no loaded layer
 contains them. The pointer snaps to them: within 14 pixels of one
 (`highlightPickTolerancePixels`), it is picked ahead of any other star, even
 one nearer the pointer. Names that would overlap step up or down until they
 find room, and are hidden if there is none nearby. Systems that always show
-their name (a route's start and end) get first choice, then coloured stops,
-then the rest in list order.
+their name (a route's start and end) get first choice, then systems marked
+out by colour, shape or centre dot, then the rest in list order.
 
 In the demo: `?view=topDown&highlight=Sol,0,0,0&highlight=Lave,75.75,48.75,70.75&route`.
 
@@ -312,14 +318,25 @@ galaxyMap.dispatch({
 It is tested against the exact plotter's results (`result.jumps`). It also
 accepts `result.system_jumps` with `system` names, as the neutron and
 tourist plotters use, and a plain list of jumps. The start and end are named;
-every other stop shows its name when hovered. Neutron boosts are blue,
-refuel stops green, and neutron boosts that are also refuel stops purple
-(`ROUTE_STOP_COLOURS`). `routeStopColour(jump)` gives the colour for one
-jump, for pages that build their own route systems.
+every other stop shows its name when hovered. Stops are marked so they can
+be told apart without relying on colour: the shape shows a neutron boost, and
+a centre dot a refuel stop.
+
+| Stop | Marker | Colour |
+|---|---|---|
+| Neutron boost | Diamond | Blue |
+| Refuel stop | Circle with a centre dot | Green |
+| Both | Diamond with a centre dot | Purple |
+| Any other | Circle | The highlight colour |
+
+`routeStopMarker(jump)` gives the fields for one jump, for pages that build
+their own route systems:
+`{ name, coordinates, ...routeStopMarker(jump) }`.
 
 Unnamed stops are drawn as small rings. When the route is seen from far away
 and rings would overlap, only some are drawn: the named ends first, then
-neutron and refuel stops, then the rest. More appear as you zoom in.
+neutron and refuel stops, then the rest. Neutron and refuel stops have
+slightly larger rings than ordinary ones, so their shape and dot stay clear. More appear as you zoom in.
 
 In the demo, choose a route file in the panel, or open with
 `?routeFile=<url of the route JSON>`. The demo also takes `?disable=` and

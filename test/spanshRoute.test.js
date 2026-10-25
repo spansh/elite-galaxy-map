@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { ROUTE_STOP_COLOURS, routeStopColour, routeSystemsFromSpanshResult } from '../src/spanshRoute.js';
+import { ROUTE_STOP_COLOURS, routeStopMarker, routeSystemsFromSpanshResult } from '../src/spanshRoute.js';
 import { COMMAND_TYPES, validateCommand } from '../src/commands.js';
 
 // A shortened exact plotter result: Sol to Beagle Point, keeping the first
@@ -18,19 +18,25 @@ describe('routeSystemsFromSpanshResult', () => {
         expect(systems[1].showName).toBeUndefined();
     });
 
-    it('colours neutron boosts and refuel stops', () => {
+    it('marks neutron boosts and refuel stops', () => {
         const systems = routeSystemsFromSpanshResult(exactPlotterRoute);
-        expect(systems[2].colour).toBe(ROUTE_STOP_COLOURS.neutronBoost);
-        expect(systems[3].colour).toBe(ROUTE_STOP_COLOURS.refuel);
+        expect(systems[2]).toMatchObject({ colour: ROUTE_STOP_COLOURS.neutronBoost, shape: 'diamond' });
+        expect(systems[2].centreDot).toBeUndefined();
+        expect(systems[3]).toMatchObject({ colour: ROUTE_STOP_COLOURS.refuel, centreDot: true });
+        expect(systems[3].shape).toBeUndefined();
         expect(systems[1].colour).toBeUndefined();
+        expect(systems[1].shape).toBeUndefined();
+        expect(systems[1].centreDot).toBeUndefined();
     });
 
-    it('gives stops that are both a neutron boost and a refuel stop their own colour', () => {
-        expect(routeStopColour({ has_neutron: true, must_refuel: true })).toBe(ROUTE_STOP_COLOURS.neutronBoostAndRefuel);
-        expect(routeStopColour({ neutron_star: true, must_refuel: true })).toBe(ROUTE_STOP_COLOURS.neutronBoostAndRefuel);
-        expect(routeStopColour({ has_neutron: true, must_refuel: false })).toBe(ROUTE_STOP_COLOURS.neutronBoost);
-        expect(routeStopColour({ has_neutron: false, must_refuel: true })).toBe(ROUTE_STOP_COLOURS.refuel);
-        expect(routeStopColour({ has_neutron: false, must_refuel: false })).toBeUndefined();
+    it('marks stops by shape for neutron boosts and a centre dot for refuelling, so both can be read at once', () => {
+        expect(routeStopMarker({ has_neutron: true, must_refuel: true }))
+            .toEqual({ colour: ROUTE_STOP_COLOURS.neutronBoostAndRefuel, shape: 'diamond', centreDot: true });
+        expect(routeStopMarker({ neutron_star: true, must_refuel: true }))
+            .toEqual({ colour: ROUTE_STOP_COLOURS.neutronBoostAndRefuel, shape: 'diamond', centreDot: true });
+        expect(routeStopMarker({ has_neutron: true, must_refuel: false })).toEqual({ colour: ROUTE_STOP_COLOURS.neutronBoost, shape: 'diamond' });
+        expect(routeStopMarker({ has_neutron: false, must_refuel: true })).toEqual({ colour: ROUTE_STOP_COLOURS.refuel, centreDot: true });
+        expect(routeStopMarker({ has_neutron: false, must_refuel: false })).toEqual({});
     });
 
     it('makes a command the map accepts', () => {
@@ -50,6 +56,14 @@ describe('routeSystemsFromSpanshResult', () => {
         expect(systems.map(system => system.name)).toEqual(['Sol', 'Middle', 'End']);
         expect(systems[1].coordinates).toEqual({ x: 1, y: 2, z: 3 });
         expect(systems[1].colour).toBe(ROUTE_STOP_COLOURS.neutronBoost);
+    });
+
+    it('rejects unknown marker shapes and centre dots that are not true or false', () => {
+        const system = { name: 'Sol', coordinates: { x: 0, y: 0, z: 0 } };
+        const highlight = extraFields => ({ type: COMMAND_TYPES.highlightSystems, systems: [{ ...system, ...extraFields }] });
+        expect(() => validateCommand(highlight({ shape: 'triangle', centreDot: true }))).not.toThrow();
+        expect(() => validateCommand(highlight({ shape: 'hexagon' }))).toThrow(/shape must be circle, diamond, square, triangle/);
+        expect(() => validateCommand(highlight({ centreDot: 'yes' }))).toThrow(/centreDot must be true or false/);
     });
 
     it('explains routes it cannot use', () => {
