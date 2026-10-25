@@ -53,13 +53,19 @@ export const COMMAND_TYPES = Object.freeze({
     highlightSystems: 'highlightSystems',
     // { type }
     clearHighlights: 'clearHighlights',
+    // { type, entries: [{ label, colour?, shape?, centreDot?, count? }] }
+    // A key to the highlight markers, shown in a corner of the map: each
+    // entry draws a marker as the map would (colour defaulting to the
+    // highlight colour), its label and, if given, a count. An empty list
+    // hides it. Independent of the highlights, so clearing them leaves it.
+    setLegend: 'setLegend',
     // { type, y }
     setGridHeight: 'setGridHeight',
     // { type, visible }  the same as setUserInterface with grid
     setGridVisibility: 'setGridVisibility',
     // { type, rotate?, pan?, zoom?, keyboardMovement?, hover?, selectByClick?,
     //   flyToSelection?, grid?, gridLabel?, loadingOverlay?, panel?,
-    //   dataLoading?, layerList?, routePicker?, displaySettings?,
+    //   legend?, dataLoading?, layerList?, routePicker?, displaySettings?,
     //   selectionDetails? }
     // Switches parts of the map's own interface on (true) or off (false);
     // anything left out keeps its setting. See userInterface.js.
@@ -110,6 +116,16 @@ function countLines(text) {
         }
         lineCount++;
         searchFrom = newlinePosition + 1;
+    }
+}
+
+// The shape and centreDot of a highlighted system or legend entry.
+function checkMarkerFields(marker, where) {
+    if (marker.shape !== undefined && !MARKER_SHAPE_NAMES.includes(marker.shape)) {
+        throw new Error(`${where} shape must be ${MARKER_SHAPE_NAMES.join(', ')}, not ${JSON.stringify(marker.shape)}`);
+    }
+    if (marker.centreDot !== undefined && typeof marker.centreDot !== 'boolean') {
+        throw new Error(`${where} centreDot must be true or false`);
     }
 }
 
@@ -176,11 +192,23 @@ export function validateCommand(command) {
             if (!hasCoordinates(system?.coordinates)) {
                 throw new Error(`highlightSystems system ${index} (${system?.name ?? 'unnamed'}) needs coordinates with numbers for x, y and z`);
             }
-            if (system.shape !== undefined && !MARKER_SHAPE_NAMES.includes(system.shape)) {
-                throw new Error(`highlightSystems system ${index} (${system.name ?? 'unnamed'}) shape must be ${MARKER_SHAPE_NAMES.join(', ')}, not ${JSON.stringify(system.shape)}`);
+            checkMarkerFields(system, `highlightSystems system ${index} (${system.name ?? 'unnamed'})`);
+        });
+    }
+    if (command.type === COMMAND_TYPES.setLegend) {
+        if (!Array.isArray(command.entries)) {
+            throw new Error('setLegend needs entries as an array (an empty one hides the legend)');
+        }
+        command.entries.forEach((entry, index) => {
+            if (typeof entry?.label !== 'string' || entry.label === '') {
+                throw new Error(`setLegend entry ${index} needs a label`);
             }
-            if (system.centreDot !== undefined && typeof system.centreDot !== 'boolean') {
-                throw new Error(`highlightSystems system ${index} (${system.name ?? 'unnamed'}) centreDot must be true or false`);
+            checkMarkerFields(entry, `setLegend entry ${index} (${entry.label})`);
+            if (entry.colour !== undefined && typeof entry.colour !== 'string') {
+                throw new Error(`setLegend entry ${index} (${entry.label}) colour must be a CSS colour such as '#7cc4ff'`);
+            }
+            if (entry.count !== undefined && !Number.isFinite(entry.count)) {
+                throw new Error(`setLegend entry ${index} (${entry.label}) count must be a number`);
             }
         });
     }

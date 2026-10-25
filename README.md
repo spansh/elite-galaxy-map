@@ -32,7 +32,7 @@ waits until the element is shown.
 | `elite-galaxy-map/spansh-loader-worker.js` | The example loader worker. |
 | `elite-galaxy-map/read-lines.js` | Its dump-reading helpers (`readLines`, `parseDumpLine`, `unpackIfGzipped`). |
 | `elite-galaxy-map/star-classes.js` | Its sorting of main star types into layers (`layerForMainStar`, `STAR_CLASS_LAYERS`). |
-| `elite-galaxy-map/spansh-route.js` | `routeSystemsFromSpanshResult`, `routeStopMarker` and `ROUTE_STOP_COLOURS` (also exported by the map). |
+| `elite-galaxy-map/spansh-route.js` | `routeSystemsFromSpanshResult`, `routeStopMarker`, `routeStopLegend` and `ROUTE_STOP_COLOURS` (also exported by the map). |
 
 The source finds its font and density map with
 `new URL('../assets/...', import.meta.url)`, which bundlers follow and copy
@@ -82,6 +82,7 @@ transferable so it isn't copied between threads.
 | `moveCamera` | `target`, `distance`, `view` | Flies to look at `target`. Anything left out stays as it is, so `{ type: 'moveCamera', view: 'topDown' }` turns to look straight down at the same point. |
 | `highlightSystems` | `systems`, `asRoute`, `showNames`, `frame`, `view` | Shows systems with a ring and their name, replacing earlier highlights. See below. |
 | `clearHighlights` | | |
+| `setLegend` | `entries` | Shows a key to the highlight markers. See [Legend](#legend). |
 | `setGridHeight` | `y` | Moves the grid. Selecting a system also does this. |
 | `setGridVisibility` | `visible` | The same as `setUserInterface` with `grid`. |
 | `setUserInterface` | any of the settings below | Switches parts of the map's interface on or off. See [User interface](#user-interface). |
@@ -160,6 +161,8 @@ It accepts `{ type: 'startLoading', url, batchSize, includeNames }` and
 | `frameHighlightedSystems` | `true` | Start with the camera fitting the highlights on screen, instead of at `initialTarget` |
 | `framingMinimumDistance` | `1000` | Closest the camera comes when framing, in light years, for example on one system |
 | `highlightColour` | `'#ffd27a'` | Rings, names and route lines of highlights |
+| `legend` | `[]` | A key to the highlight markers, as for `setLegend`. See [Legend](#legend). |
+| `legendCorner` | `'topRight'` | Where the legend sits: `'topRight'`, `'topLeft'`, `'bottomRight'` or `'bottomLeft'` |
 | `cellSizeInLightYears` | `4000` | Size of the spatial cells stars are grouped into |
 | `exposure` | `1.2` | How hard bright areas are compressed |
 | `backgroundColour` | `'#03060a'` | Colour of empty space |
@@ -223,6 +226,7 @@ galaxyMap.dispatch({ type: 'setUserInterface', rotate: true, pan: true, zoom: tr
 | `grid` | on | The grid |
 | `gridLabel` | on | The grid's coordinate label |
 | `loadingOverlay` | on | The progress bar while data loads |
+| `legend` | on | The key to the highlight markers, when the page has given one |
 | `panel` | on | The whole control panel |
 | `layerList` | on | Panel: the layers, with a box to show or hide each |
 | `displaySettings` | on | Panel: the Galaxy glow, Galaxy image and Grid checkboxes |
@@ -296,6 +300,28 @@ out by colour, shape or centre dot, then the rest in list order.
 
 In the demo: `?view=topDown&highlight=Sol,0,0,0&highlight=Lave,75.75,48.75,70.75&route`.
 
+### Legend
+
+A key to the markers can sit in a corner of the map. Each entry draws a
+marker as the map draws it (shape, colour and centre dot), with a label and,
+if given, a count:
+
+```js
+galaxyMap.dispatch({
+    type: 'setLegend',
+    entries: [
+        { label: 'Search result', count: 48 },
+        { label: 'Reference system', colour: '#6ea8fe', shape: 'square' },
+    ],
+});
+```
+
+An entry without a `colour` gets the highlight colour, as a highlight does.
+An empty list hides the legend. The legend is set separately from the
+highlights, so `clearHighlights` leaves it as it is. Set one from the start
+with the `legend` option. `legendCorner` chooses where it sits:
+`'topRight'` (the default), `'topLeft'`, `'bottomRight'` or `'bottomLeft'`.
+
 ### Spansh routes
 
 `routeSystemsFromSpanshResult()`, exported by the library, turns a route
@@ -303,16 +329,12 @@ from Spansh's plotters into highlighted systems. The control panel's route
 picker uses it, or you can call it yourself:
 
 ```js
-import { routeSystemsFromSpanshResult } from 'elite-galaxy-map';
+import { routeStopLegend, routeSystemsFromSpanshResult } from 'elite-galaxy-map';
 
 const routeResult = await (await fetch(routeUrl)).json();
-galaxyMap.dispatch({
-    type: 'highlightSystems',
-    systems: routeSystemsFromSpanshResult(routeResult),
-    asRoute: true,
-    showNames: false,
-    frame: true,
-});
+const systems = routeSystemsFromSpanshResult(routeResult);
+galaxyMap.dispatch({ type: 'highlightSystems', systems, asRoute: true, showNames: false, frame: true });
+galaxyMap.dispatch({ type: 'setLegend', entries: routeStopLegend(systems) });
 ```
 
 It is tested against the exact plotter's results (`result.jumps`). It also
@@ -333,10 +355,15 @@ a centre dot a refuel stop.
 their own route systems:
 `{ name, coordinates, ...routeStopMarker(jump) }`.
 
+`routeStopLegend(systems)` gives [legend](#legend) entries for the kinds of
+stop a route has, with how many of each. It gives an empty list for a route
+with only ordinary stops. The panel's route picker shows this legend.
+
 Unnamed stops are drawn as small rings. When the route is seen from far away
 and rings would overlap, only some are drawn: the named ends first, then
-neutron and refuel stops, then the rest. Neutron and refuel stops have
-slightly larger rings than ordinary ones, so their shape and dot stay clear. More appear as you zoom in.
+neutron and refuel stops, then the rest. More appear as you zoom in. Neutron
+and refuel stops have slightly larger rings than ordinary ones, so their shape
+and dot stay clear.
 
 In the demo, choose a route file in the panel, or open with
 `?routeFile=<url of the route JSON>`. The demo also takes `?disable=` and

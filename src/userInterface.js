@@ -29,6 +29,9 @@ export const DEFAULT_USER_INTERFACE = Object.freeze({
     gridLabel: true,
     // The progress bar along the bottom while data loads.
     loadingOverlay: true,
+    // The key to the highlight markers, when the page has given one (the
+    // legend option or setLegend command).
+    legend: true,
 
     // The control panel in the top left corner, and its sections:
     panel: true,

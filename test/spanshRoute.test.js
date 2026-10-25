@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { ROUTE_STOP_COLOURS, routeStopMarker, routeSystemsFromSpanshResult } from '../src/spanshRoute.js';
+import { ROUTE_STOP_COLOURS, routeStopLegend, routeStopMarker, routeSystemsFromSpanshResult } from '../src/spanshRoute.js';
 import { COMMAND_TYPES, validateCommand } from '../src/commands.js';
 
 // A shortened exact plotter result: Sol to Beagle Point, keeping the first
@@ -56,6 +56,33 @@ describe('routeSystemsFromSpanshResult', () => {
         expect(systems.map(system => system.name)).toEqual(['Sol', 'Middle', 'End']);
         expect(systems[1].coordinates).toEqual({ x: 1, y: 2, z: 3 });
         expect(systems[1].colour).toBe(ROUTE_STOP_COLOURS.neutronBoost);
+    });
+
+    it('makes a legend of the kinds of stop a route has, with counts', () => {
+        const systems = [
+            { has_neutron: true }, { has_neutron: true }, { must_refuel: true }, {}, {},
+        ].map((jump, index) => ({ name: `Stop ${index}`, coordinates: { x: index, y: 0, z: 0 }, ...routeStopMarker(jump) }));
+        expect(routeStopLegend(systems)).toEqual([
+            { label: 'Neutron boost', colour: ROUTE_STOP_COLOURS.neutronBoost, shape: 'diamond', count: 2 },
+            { label: 'Refuel stop', colour: ROUTE_STOP_COLOURS.refuel, centreDot: true, count: 1 },
+            { label: 'Other stop', count: 2 },
+        ]);
+        expect(() => validateCommand({ type: COMMAND_TYPES.setLegend, entries: routeStopLegend(systems) })).not.toThrow();
+    });
+
+    it('leaves the legend empty for a route with only ordinary stops', () => {
+        const systems = [{}, {}].map((jump, index) => ({ name: `Stop ${index}`, coordinates: { x: index, y: 0, z: 0 }, ...routeStopMarker(jump) }));
+        expect(routeStopLegend(systems)).toEqual([]);
+    });
+
+    it('checks legend entries', () => {
+        const legend = entries => ({ type: COMMAND_TYPES.setLegend, entries });
+        expect(() => validateCommand(legend([]))).not.toThrow();
+        expect(() => validateCommand(legend([{ label: 'Reference system', colour: '#6ea8fe', shape: 'square' }]))).not.toThrow();
+        expect(() => validateCommand({ type: COMMAND_TYPES.setLegend })).toThrow(/needs entries as an array/);
+        expect(() => validateCommand(legend([{ colour: '#fff' }]))).toThrow(/entry 0 needs a label/);
+        expect(() => validateCommand(legend([{ label: 'Odd', shape: 'star' }]))).toThrow(/shape must be/);
+        expect(() => validateCommand(legend([{ label: 'Odd', count: 'many' }]))).toThrow(/count must be a number/);
     });
 
     it('rejects unknown marker shapes and centre dots that are not true or false', () => {

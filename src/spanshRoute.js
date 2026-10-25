@@ -80,6 +80,37 @@ function coordinatesOfJump(jump) {
     return hasCoordinates ? coordinates : null;
 }
 
+// The kinds of stop routeStopMarker tells apart, in the order a legend lists
+// them, each with an example jump.
+const ROUTE_STOP_KINDS = Object.freeze([
+    { label: 'Neutron boost', exampleJump: { has_neutron: true } },
+    { label: 'Refuel stop', exampleJump: { must_refuel: true } },
+    { label: 'Neutron boost and refuel', exampleJump: { has_neutron: true, must_refuel: true } },
+    { label: 'Other stop', exampleJump: {} },
+]);
+
+// Entries for the map's legend (the legend option or setLegend command)
+// explaining the stops of a route made by routeSystemsFromSpanshResult or
+// routeStopMarker, with how many of each it has. Only the kinds the route
+// has are listed; a route with no neutron boosts or refuel stops gets an
+// empty legend, as there's nothing to tell apart.
+//
+//     const systems = routeSystemsFromSpanshResult(routeResult);
+//     galaxyMap.dispatch({ type: 'highlightSystems', systems, asRoute: true, frame: true });
+//     galaxyMap.dispatch({ type: 'setLegend', entries: routeStopLegend(systems) });
+export function routeStopLegend(systems) {
+    const entries = [];
+    for (const { label, exampleJump } of ROUTE_STOP_KINDS) {
+        const marker = routeStopMarker(exampleJump);
+        const count = systems.filter(system => system.shape === marker.shape && system.centreDot === marker.centreDot).length;
+        if (count > 0) {
+            entries.push({ label, ...marker, count });
+        }
+    }
+    const hasOnlyOrdinaryStops = entries.length === 1 && entries[0].shape === undefined && entries[0].centreDot === undefined;
+    return hasOnlyOrdinaryStops ? [] : entries;
+}
+
 export function routeSystemsFromSpanshResult(routeResult) {
     if (routeResult?.status !== undefined && routeResult.status !== 'ok') {
         throw new Error(`The route did not finish: status "${routeResult.status}"${routeResult.error ? `, ${routeResult.error}` : ''}`);

@@ -9,6 +9,7 @@ import { GALAXY_DENSITY_MAP_AREA } from './backdrop/densityMap.js';
 import { COMMAND_TYPES, validateCommand } from './commands.js';
 import { galacticToScene } from './coordinates.js';
 import { LoadingOverlay } from './LoadingOverlay.js';
+import { LEGEND_CORNERS, Legend } from './Legend.js';
 import { ToneMappingPass } from './ToneMappingPass.js';
 import { MOVEMENT_KEYS, calculateKeyboardMovement, movementKeyName } from './keyboardMovement.js';
 import { directionTowardsCamera, frameSystems } from './cameraFraming.js';
@@ -58,6 +59,12 @@ export const DEFAULT_OPTIONS = Object.freeze({
     // always name the start and end of a long route.
     showHighlightNames: true,
     highlightColour: '#ffd27a',
+    // A key to the highlight markers, as [{ label, colour?, shape?,
+    // centreDot?, count? }] (see the setLegend command), and which corner
+    // of the map it sits in: 'topRight', 'topLeft', 'bottomRight' or
+    // 'bottomLeft'.
+    legend: [],
+    legendCorner: 'topRight',
     backgroundColour: '#03060a',
     // How hard bright areas are compressed. Higher is brighter overall.
     exposure: 1.2,
@@ -168,6 +175,12 @@ export class GalaxyMap extends EventTarget {
             dataUrl: this.options.panelDataUrl,
             layerListFolded: this.options.panelLayerListFolded,
         });
+        if (!LEGEND_CORNERS.includes(this.options.legendCorner)) {
+            throw new Error(`The legendCorner option must be ${LEGEND_CORNERS.join(', ')}, not ${JSON.stringify(this.options.legendCorner)}`);
+        }
+        validateCommand({ type: COMMAND_TYPES.setLegend, entries: this.options.legend });
+        this.legend = new Legend(containerElement, { corner: this.options.legendCorner, defaultColour: this.options.highlightColour });
+        this.legend.setEntries(this.options.legend);
         this.setUserInterface({});
 
         this.resizeObserver = new ResizeObserver(() => this.resizeToContainer());
@@ -466,6 +479,9 @@ export class GalaxyMap extends EventTarget {
             case COMMAND_TYPES.clearHighlights:
                 this.highlightSystems([], { frame: false });
                 break;
+            case COMMAND_TYPES.setLegend:
+                this.legend.setEntries(command.entries);
+                break;
             case COMMAND_TYPES.setGridHeight:
                 this.grid.setGalacticHeight(command.y);
                 this.requestRender();
@@ -745,6 +761,7 @@ export class GalaxyMap extends EventTarget {
         this.grid.visible = settings.grid;
         this.grid.setLabelEnabled(settings.gridLabel);
         this.loadingOverlay.setEnabled(settings.loadingOverlay);
+        this.legend.setEnabled(settings.legend);
         this.dispatchEvent(new CustomEvent('userinterfacechange', { detail: { userInterface: this.getUserInterface() } }));
         this.requestRender();
     }
@@ -1058,6 +1075,7 @@ export class GalaxyMap extends EventTarget {
         this.grid.dispose();
         this.markers.dispose();
         this.loadingOverlay.dispose();
+        this.legend.dispose();
         this.controlPanel.dispose();
         this.toneMappingPass.dispose();
         this.renderer.dispose();
