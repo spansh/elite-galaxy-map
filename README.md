@@ -32,7 +32,7 @@ waits until the element is shown.
 | `elite-galaxy-map/spansh-loader-worker.js` | The example loader worker. |
 | `elite-galaxy-map/read-lines.js` | Its dump-reading helpers (`readLines`, `parseDumpLine`, `unpackIfGzipped`). |
 | `elite-galaxy-map/star-classes.js` | Its sorting of main star types into layers (`layerForMainStar`, `STAR_CLASS_LAYERS`). |
-| `elite-galaxy-map/spansh-route.js` | `routeSystemsFromSpanshResult` and `ROUTE_STOP_COLOURS` (also exported by the map). |
+| `elite-galaxy-map/spansh-route.js` | `routeSystemsFromSpanshResult`, `routeStopColour` and `ROUTE_STOP_COLOURS` (also exported by the map). |
 
 The source finds its font and density map with
 `new URL('../assets/...', import.meta.url)`, which bundlers follow and copy
@@ -312,8 +312,10 @@ galaxyMap.dispatch({
 It is tested against the exact plotter's results (`result.jumps`). It also
 accepts `result.system_jumps` with `system` names, as the neutron and
 tourist plotters use, and a plain list of jumps. The start and end are named;
-every other stop shows its name when hovered. Neutron boosts are blue and
-refuel stops green (`ROUTE_STOP_COLOURS`).
+every other stop shows its name when hovered. Neutron boosts are blue,
+refuel stops green, and neutron boosts that are also refuel stops purple
+(`ROUTE_STOP_COLOURS`). `routeStopColour(jump)` gives the colour for one
+jump, for pages that build their own route systems.
 
 Unnamed stops are drawn as small rings. When the route is seen from far away
 and rings would overlap, only some are drawn: the named ends first, then

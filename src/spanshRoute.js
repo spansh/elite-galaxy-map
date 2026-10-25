@@ -19,12 +19,34 @@
 //
 // The start and end are always named; with showNames: 'ifRoom' every other
 // stop is named where its label fits, and otherwise shows its name on hover.
-// Neutron boosts and refuel stops get their own ring colours.
+// Neutron boosts, refuel stops and stops that are both get their own ring
+// colours (see routeStopColour).
 
 export const ROUTE_STOP_COLOURS = Object.freeze({
     neutronBoost: '#7cc4ff',
     refuel: '#7be08a',
+    neutronBoostAndRefuel: '#d49cff',
 });
+
+// The ring colour for one jump of a Spansh route: a neutron boost (has_neutron
+// in the exact plotter, neutron_star in the neutron plotter), a refuel stop
+// (must_refuel), both, or undefined for an ordinary stop, which then gets the
+// map's highlight colour. Pages building their own route systems can use it
+// to colour stops the same way.
+export function routeStopColour(jump) {
+    const isNeutronBoost = jump.has_neutron === true || jump.neutron_star === true;
+    const mustRefuel = jump.must_refuel === true;
+    if (isNeutronBoost && mustRefuel) {
+        return ROUTE_STOP_COLOURS.neutronBoostAndRefuel;
+    }
+    if (isNeutronBoost) {
+        return ROUTE_STOP_COLOURS.neutronBoost;
+    }
+    if (mustRefuel) {
+        return ROUTE_STOP_COLOURS.refuel;
+    }
+    return undefined;
+}
 
 function findListOfJumps(routeResult) {
     if (Array.isArray(routeResult)) {
@@ -63,11 +85,9 @@ export function routeSystemsFromSpanshResult(routeResult) {
         if (jump.id64 !== undefined) {
             system.key = jump.id64;
         }
-        const isNeutronBoost = jump.has_neutron === true || jump.neutron_star === true;
-        if (isNeutronBoost) {
-            system.colour = ROUTE_STOP_COLOURS.neutronBoost;
-        } else if (jump.must_refuel === true) {
-            system.colour = ROUTE_STOP_COLOURS.refuel;
+        const colour = routeStopColour(jump);
+        if (colour !== undefined) {
+            system.colour = colour;
         }
         return system;
     });

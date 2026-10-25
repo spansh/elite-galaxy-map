@@ -321,8 +321,10 @@ export class ControlPanel {
             return;
         }
         this.galaxyMap.dispatch({ type: 'highlightSystems', systems, asRoute: true, showNames: 'ifRoom', frame: true });
-        const neutronBoosts = systems.filter(system => system.colour === ROUTE_STOP_COLOURS.neutronBoost).length;
-        const refuelStops = systems.filter(system => system.colour === ROUTE_STOP_COLOURS.refuel).length;
+        const countStops = colour => systems.filter(system => system.colour === colour).length;
+        const neutronBoosts = countStops(ROUTE_STOP_COLOURS.neutronBoost);
+        const refuelStops = countStops(ROUTE_STOP_COLOURS.refuel);
+        const neutronBoostsWithRefuel = countStops(ROUTE_STOP_COLOURS.neutronBoostAndRefuel);
         const legendEntry = (colour, text) => {
             const swatch = buildElement('span', { className: 'egm-panel-key' });
             swatch.style.background = colour;
@@ -333,6 +335,9 @@ export class ControlPanel {
             buildElement('br'),
             ...legendEntry(ROUTE_STOP_COLOURS.neutronBoost, `${neutronBoosts} neutron boosts`),
             ...legendEntry(ROUTE_STOP_COLOURS.refuel, `${refuelStops} refuel stops`),
+            ...(neutronBoostsWithRefuel > 0
+                ? legendEntry(ROUTE_STOP_COLOURS.neutronBoostAndRefuel, `${neutronBoostsWithRefuel} neutron boosts with refuel`)
+                : []),
         );
     }
 

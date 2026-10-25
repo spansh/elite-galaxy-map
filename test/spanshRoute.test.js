@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { ROUTE_STOP_COLOURS, routeSystemsFromSpanshResult } from '../src/spanshRoute.js';
+import { ROUTE_STOP_COLOURS, routeStopColour, routeSystemsFromSpanshResult } from '../src/spanshRoute.js';
 import { COMMAND_TYPES, validateCommand } from '../src/commands.js';
 
 // A shortened exact plotter result: Sol to Beagle Point, keeping the first
@@ -23,6 +23,14 @@ describe('routeSystemsFromSpanshResult', () => {
         expect(systems[2].colour).toBe(ROUTE_STOP_COLOURS.neutronBoost);
         expect(systems[3].colour).toBe(ROUTE_STOP_COLOURS.refuel);
         expect(systems[1].colour).toBeUndefined();
+    });
+
+    it('gives stops that are both a neutron boost and a refuel stop their own colour', () => {
+        expect(routeStopColour({ has_neutron: true, must_refuel: true })).toBe(ROUTE_STOP_COLOURS.neutronBoostAndRefuel);
+        expect(routeStopColour({ neutron_star: true, must_refuel: true })).toBe(ROUTE_STOP_COLOURS.neutronBoostAndRefuel);
+        expect(routeStopColour({ has_neutron: true, must_refuel: false })).toBe(ROUTE_STOP_COLOURS.neutronBoost);
+        expect(routeStopColour({ has_neutron: false, must_refuel: true })).toBe(ROUTE_STOP_COLOURS.refuel);
+        expect(routeStopColour({ has_neutron: false, must_refuel: false })).toBeUndefined();
     });
 
     it('makes a command the map accepts', () => {
