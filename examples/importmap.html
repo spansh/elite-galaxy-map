@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Galaxy Map with an import map</title>
+        <style>
+            body {
+                margin: 0;
+                background: #03060a;
+            }
+            #neutron-map {
+                height: 100vh;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="neutron-map"></div>
+        <!--
+            Using the standalone build without a bundler. Serve these paths
+            from wherever you keep the files on your site.
+        -->
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "../node_modules/three/build/three.module.js",
+                    "three/addons/": "../node_modules/three/examples/jsm/",
+                    "elite-galaxy-map": "../dist/galaxy-map.standalone.js"
+                }
+            }
+        </script>
+        <script type="module">
+            import { GalaxyMap } from 'elite-galaxy-map';
+
+            const galaxyMap = new GalaxyMap(document.getElementById('neutron-map'));
+            window.galaxyMap = galaxyMap;
+
+            const loader = new Worker(new URL('./spansh-loader/spansh-loader-worker.js', import.meta.url), { type: 'module' });
+            loader.addEventListener('message', event => galaxyMap.dispatch(event.data));
+            // A dump downloaded into examples/public/; ?data=<url> for another.
+            const dumpUrl = new URLSearchParams(location.search).get('data') ?? './public/systems_neutron.json.gz';
+            loader.postMessage({ type: 'startLoading', url: dumpUrl });
+
+            galaxyMap.addEventListener('systemselect', event => {
+                console.log('Selected', event.detail.system);
+            });
+        </script>
+    </body>
+</html>

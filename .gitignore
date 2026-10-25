@@ -1,0 +1,7 @@
+node_modules
+.pnpm-store
+dist
+# Systems dumps, which can be many gigabytes
+*.json.gz
+systems*.json
+galaxy*.json
