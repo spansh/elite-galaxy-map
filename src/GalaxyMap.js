@@ -42,7 +42,7 @@ export const DEFAULT_OPTIONS = Object.freeze({
     // 'topDown' (straight down, with the core direction at the top).
     initialView: 'angled',
     // Systems to show with a ring and their name from the start, as
-    // [{ name, coordinates: { x, y, z }, key?, colour? }].
+    // [{ name, coordinates: { x, y, z }, key?, colour?, shape?, centreDot?, showName? }].
     highlightedSystems: [],
     // Start with the camera framing the highlighted systems, if there are any,
     // instead of at initialTarget and initialDistance.
