@@ -46,8 +46,10 @@ export const DEFAULT_OPTIONS = Object.freeze({
     // Start with the camera framing the highlighted systems, if there are any,
     // instead of at initialTarget and initialDistance.
     frameHighlightedSystems: true,
-    // Closest the camera comes when framing (for example a single system).
-    framingMinimumDistance: 200,
+    // Closest the camera comes when framing, in light years: framing a
+    // single system (or a tight group) stops here, far enough back to show
+    // its surroundings.
+    framingMinimumDistance: 1000,
     // Join the highlighted systems in order with a line, as a route.
     highlightsAreRoute: false,
     // Naming of highlighted systems: true names every one (moving labels to

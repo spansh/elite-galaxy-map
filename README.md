@@ -158,7 +158,7 @@ It accepts `{ type: 'startLoading', url, batchSize, includeNames }` and
 | `highlightsAreRoute` | `false` | Join the starting highlights in order with a line |
 | `showHighlightNames` | `true` | `true` names every highlighted system, `'ifRoom'` those whose name fits, `false` none |
 | `frameHighlightedSystems` | `true` | Start with the camera fitting the highlights on screen, instead of at `initialTarget` |
-| `framingMinimumDistance` | `200` | Closest the camera comes when framing, for example on one system |
+| `framingMinimumDistance` | `1000` | Closest the camera comes when framing, in light years, for example on one system |
 | `highlightColour` | `'#ffd27a'` | Rings, names and route lines of highlights |
 | `cellSizeInLightYears` | `4000` | Size of the spatial cells stars are grouped into |
 | `exposure` | `1.2` | How hard bright areas are compressed |

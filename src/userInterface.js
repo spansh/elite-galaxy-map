@@ -34,7 +34,7 @@ export const DEFAULT_USER_INTERFACE = Object.freeze({
     panel: true,
     // The layers, with their colours, sizes and a box to show or hide each.
     layerList: true,
-    // Backdrop style, flat galaxy image and grid.
+    // The Galaxy glow, Galaxy image and Grid checkboxes.
     displaySettings: true,
     // Choosing a Spansh route file to show, and clearing it.
     routePicker: true,
