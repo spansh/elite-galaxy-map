@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chooseStarsToDraw, fadeForSample } from '../src/levelOfDetail.js';
+import { chooseStarsToDraw, fadeForSample, hasGrownEnoughToShuffle, orderCellsForShuffling } from '../src/levelOfDetail.js';
 
 const settings = { maximumStarsPerPixel: 1, starBudget: 1000000 };
 
@@ -34,10 +34,20 @@ describe('chooseStarsToDraw', () => {
         expect(chooseStarsToDraw([cell(200000, 50, { shuffledCount: 0 })], settings)[0].drawCount).toBe(200000);
     });
 
-    it('only samples from the shuffled stars, drawing everything if more are wanted than that', () => {
-        // 2,500 wanted, 10,000 shuffled: sample from those.
-        expect(chooseStarsToDraw([cell(20000, 50, { shuffledCount: 10000 })], settings)[0].drawCount).toBe(2500);
-        // 2,500 wanted, only 1,000 shuffled: draw them all.
+    it('only samples from the shuffled stars, brightening the sample to stand for those alone', () => {
+        // 2,500 wanted from the whole cell; half of it shuffled, so 1,250
+        // from that half, each standing for 8 shuffled stars. The other
+        // half waits to be shuffled in rather than brightening this one.
+        const [choice] = chooseStarsToDraw([cell(20000, 50, { shuffledCount: 10000 })], settings);
+        expect(choice.drawCount).toBe(1250);
+        expect(choice.brightnessCompensation).toBeCloseTo(8);
+        expect(fadeForSample(1250, 20000, 10000).brightnessCompensation).toBeCloseTo(10000 / 1562.5);
+    });
+
+    it('draws every star of a cell with too many still waiting to be shuffled in', () => {
+        // Under half shuffled: a sample of them would leave holes where the rest are.
+        expect(chooseStarsToDraw([cell(20000, 50, { shuffledCount: 9000 })], settings)[0])
+            .toEqual({ drawCount: 20000, brightnessCompensation: 1 });
         expect(chooseStarsToDraw([cell(20000, 50, { shuffledCount: 1000 })], settings)[0].drawCount).toBe(20000);
     });
 
@@ -87,5 +97,32 @@ describe('chooseStarsToDraw with hidden layers', () => {
         const [choice] = chooseStarsToDraw([{ systemCount: 5000, shuffledCount: 5000, visibleCount: 0, widthOnScreen: 10, cameraIsInside: false }], settings);
         expect(choice).toEqual({ drawCount: 0, brightnessCompensation: 1 });
         expect(fadeForSample(0, 5000, 5000)).toEqual({ fadeStart: 0, fadeEnd: 0, brightnessCompensation: 1 });
+    });
+});
+
+describe('shuffling cells in while data loads', () => {
+    const waitingCell = (name, shuffledCount, unshuffledCount, wasOnScreen) => ({ name, shuffledCount, unshuffledCount, wasOnScreen });
+
+    it('takes cells on screen first, then those with most waiting for their size, and skips settled ones', () => {
+        const cells = [
+            waitingCell('off screen, half waiting', 1000, 500, false),
+            waitingCell('settled', 1000, 0, true),
+            waitingCell('on screen, a tenth waiting', 100000, 10000, true),
+            waitingCell('on screen, all waiting', 0, 2000, true),
+            waitingCell('off screen, a fifth waiting', 1000, 200, false),
+        ];
+        expect(orderCellsForShuffling(cells).map(cell => cell.name)).toEqual([
+            'on screen, all waiting',
+            'on screen, a tenth waiting',
+            'off screen, half waiting',
+            'off screen, a fifth waiting',
+        ]);
+    });
+
+    it('shuffles a cell again once a quarter as many again are waiting, and at least a thousand or so', () => {
+        expect(hasGrownEnoughToShuffle({ shuffledCount: 100000, unshuffledCount: 24999 })).toBe(false);
+        expect(hasGrownEnoughToShuffle({ shuffledCount: 100000, unshuffledCount: 25000 })).toBe(true);
+        expect(hasGrownEnoughToShuffle({ shuffledCount: 100, unshuffledCount: 500 })).toBe(false);
+        expect(hasGrownEnoughToShuffle({ shuffledCount: 100, unshuffledCount: 1024 })).toBe(true);
     });
 });

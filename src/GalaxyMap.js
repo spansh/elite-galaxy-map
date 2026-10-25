@@ -15,7 +15,7 @@ import { MOVEMENT_KEYS, calculateKeyboardMovement, movementKeyName } from './key
 import { directionTowardsCamera, frameSystems } from './cameraFraming.js';
 import { DEFAULT_USER_INTERFACE, validateUserInterfaceSettings } from './userInterface.js';
 import { ControlPanel } from './ControlPanel.js';
-import { chooseStarsToDraw, fadeForSample } from './levelOfDetail.js';
+import { chooseStarsToDraw, fadeForSample, hasGrownEnoughToShuffle, orderCellsForShuffling } from './levelOfDetail.js';
 
 const DEFAULT_FONT_URL = new URL('../assets/rajdhani-latin-600-normal.woff', import.meta.url).href;
 const DEFAULT_DENSITY_MAP_URL = new URL('../assets/galaxy-density.png', import.meta.url).href;
@@ -561,25 +561,39 @@ export class GalaxyMap extends EventTarget {
             const quietMilliseconds = 1500;
             let cellsLeftUntilQuiet = false;
             let anyCellShuffled = false;
-            for (const cell of this.starField.cells) {
-                if (deadline.timeRemaining() < 2) {
-                    // Out of time: carry on next time, but draw what has
-                    // been shuffled so far now.
-                    if (anyCellShuffled) {
-                        this.requestRender();
-                    }
-                    this.prepareCellsWhenIdle();
+            const outOfTime = () => {
+                if (deadline.timeRemaining() >= 2) {
+                    return false;
+                }
+                // Carry on next time, but draw what has been shuffled so
+                // far now.
+                if (anyCellShuffled) {
+                    this.requestRender();
+                }
+                this.prepareCellsWhenIdle();
+                return true;
+            };
+            // Most in need first, so no cell waits behind the others for long.
+            for (const cell of orderCellsForShuffling([...this.starField.cells])) {
+                if (outOfTime()) {
                     return;
                 }
+                const hasGoneQuiet = now - cell.timeOfLastAddition > quietMilliseconds;
+                if (hasGrownEnoughToShuffle(cell) || hasGoneQuiet) {
+                    cell.shuffleInNewSystems(Math.random);
+                    anyCellShuffled = true;
+                } else {
+                    cellsLeftUntilQuiet = true;
+                }
+            }
+            // Picking boxes only for cells that are settled: one still
+            // filling would need them sorted again with every batch.
+            for (const cell of this.starField.cells) {
                 if (cell.unshuffledCount > 0) {
-                    const hasGrownALot = cell.unshuffledCount >= Math.max(1024, cell.shuffledCount * 0.25);
-                    const hasGoneQuiet = now - cell.timeOfLastAddition > quietMilliseconds;
-                    if (hasGrownALot || hasGoneQuiet) {
-                        cell.shuffleInNewSystems(Math.random);
-                        anyCellShuffled = true;
-                    } else {
-                        cellsLeftUntilQuiet = true;
-                    }
+                    continue;
+                }
+                if (outOfTime()) {
+                    return;
                 }
                 cell.getPickingIndex();
             }
