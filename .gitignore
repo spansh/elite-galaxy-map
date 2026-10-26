@@ -8,3 +8,4 @@ systems*.json
 galaxy*.json
 # The bundled region map is not a dump
 !assets/galaxy-regions.json
+start_container.sh
