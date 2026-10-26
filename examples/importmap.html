@@ -37,8 +37,8 @@
 
             const loader = new Worker(new URL('./spansh-loader/spansh-loader-worker.js', import.meta.url), { type: 'module' });
             loader.addEventListener('message', event => galaxyMap.dispatch(event.data));
-            // A dump downloaded into examples/public/; ?data=<url> for another.
-            const dumpUrl = new URLSearchParams(location.search).get('data') ?? './public/systems_neutron.json.gz';
+            // Spansh's download server lets any page read its dumps; ?data=<url> for another.
+            const dumpUrl = new URLSearchParams(location.search).get('data') ?? 'https://downloads.spansh.co.uk/systems_neutron.json.gz';
             loader.postMessage({ type: 'startLoading', url: dumpUrl });
 
             galaxyMap.addEventListener('systemselect', event => {

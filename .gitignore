@@ -1,7 +1,10 @@
 node_modules
 .pnpm-store
 dist
+dist-demo
 # Systems dumps, which can be many gigabytes
 *.json.gz
 systems*.json
 galaxy*.json
+# The bundled region map is not a dump
+!assets/galaxy-regions.json

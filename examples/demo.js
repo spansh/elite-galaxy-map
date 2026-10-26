@@ -1,9 +1,9 @@
 import Stats from 'three/addons/libs/stats.module.js';
 import { GalaxyMap } from '../src/index.js';
 
-// A dump downloaded into examples/public/ (see the README's "Loading dumps
-// in the demo"); downloads.spansh.co.uk itself can't be read from here.
-const DEFAULT_DUMP_URL = '/systems_neutron.json.gz';
+// Spansh's download server lets any page read its dumps. A copy put in
+// examples/public/ loads from /systems_neutron.json.gz instead (?data=).
+const DEFAULT_DUMP_URL = 'https://downloads.spansh.co.uk/systems_neutron.json.gz';
 const pageParameters = new URLSearchParams(location.search);
 
 // The demo turns on the panel's data loading section, which the map leaves
@@ -112,4 +112,13 @@ document.getElementById('stats-button').addEventListener('click', () => {
 
 if (pageParameters.has('autoload')) {
     startLoading(galaxyMap.options.panelDataUrl);
+}
+
+// Under `pnpm run demo`, reload when a change has been built (see
+// scripts/serve-demo.mjs). A built demo served by a web server has no such
+// connection, so this is left out of it.
+if (import.meta.env?.MODE === 'demo-watch') {
+    const rebuildEvents = new EventSource('/__demo-reload');
+    rebuildEvents.addEventListener('rebuilt', () => location.reload());
+    rebuildEvents.addEventListener('buildfailed', event => console.error('The demo failed to build:', JSON.parse(event.data)));
 }

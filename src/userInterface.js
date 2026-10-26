@@ -32,12 +32,14 @@ export const DEFAULT_USER_INTERFACE = Object.freeze({
     // The key to the highlight markers, when the page has given one (the
     // legend option or setLegend command).
     legend: true,
+    // The borders and names of the galaxy's regions (off unless asked for).
+    regions: false,
 
     // The control panel in the top left corner, and its sections:
     panel: true,
     // The layers, with their colours, sizes and a box to show or hide each.
     layerList: true,
-    // The Galaxy glow, Galaxy image and Grid checkboxes.
+    // The Galaxy glow, Galaxy image, Grid and Regions checkboxes.
     displaySettings: true,
     // Choosing a Spansh route file to show, and clearing it.
     routePicker: true,

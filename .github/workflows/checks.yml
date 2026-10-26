@@ -36,4 +36,7 @@ jobs:
             - run: pnpm install --frozen-lockfile
             - run: pnpm run lint
             - run: pnpm test
+            # The hand-written type declarations, checked as a page using them would.
+            - run: pnpm run typecheck
             - run: pnpm run build
+            - run: pnpm run build:demo

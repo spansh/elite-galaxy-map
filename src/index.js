@@ -6,4 +6,6 @@ export { BACKDROP_STYLES } from './backdrop/GalaxyBackdrop.js';
 export { GALAXY_DENSITY_MAP_AREA } from './backdrop/densityMap.js';
 export { MARKER_SHAPE_NAMES } from './markerShapes.js';
 export { LEGEND_CORNERS } from './Legend.js';
+export { GALAXY_REGIONS_URL, GalaxyRegions, loadGalaxyRegions } from './galaxyRegions.js';
+export { DEFAULT_REGION_APPEARANCE } from './RegionOverlay.js';
 export { SAGITTARIUS_A_STAR, galacticToScene, sceneToGalactic } from './coordinates.js';

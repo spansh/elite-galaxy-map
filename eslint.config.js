@@ -8,7 +8,7 @@ import globals from 'globals';
 // plus layout: four space indents and no tabs, single quotes, semicolons,
 // and trailing commas on lines that are split.
 export default [
-    { ignores: ['dist/', 'node_modules/', '.pnpm-store/'] },
+    { ignores: ['dist/', 'dist-demo/', 'node_modules/', '.pnpm-store/'] },
     javascript.configs.recommended,
     {
         plugins: { '@stylistic': stylistic },

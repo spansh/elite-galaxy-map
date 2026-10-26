@@ -266,6 +266,8 @@ export class SystemMarkers {
         this.highlightMarkers = [];
         this.routeLine = null;
         this.routeArrows = null;
+        // Set when labels are arranged (see arrangeLabels).
+        this.screenAreasInUse = [];
         this.sceneObject = new Group();
         this.sceneObject.name = 'system markers';
         this.hoverMarker = new SystemMarker({
@@ -413,11 +415,24 @@ export class SystemMarkers {
             labelledMarkers.push(marker);
         }
         const placements = placeLabels(labelRequests, [...ringObstacles, ...otherObstacles]);
+        // What the names and rings now take up on screen, along with the
+        // other obstacles, for other labels (such as region names) to avoid.
+        this.screenAreasInUse = [...ringObstacles, ...otherObstacles];
         placements.forEach((placement, index) => {
             const marker = labelledMarkers[index];
             marker.labelHasRoom = placement.isShown;
             marker.nameLabel.visible = placement.isShown;
             marker.nameLabel.position.y = marker.nameLabelUsualHeight + placement.verticalOffset;
+            if (placement.isShown) {
+                const request = labelRequests[index];
+                const middleY = request.anchorY + placement.verticalOffset;
+                this.screenAreasInUse.push({
+                    left: request.anchorX + request.gapFromAnchor,
+                    right: request.anchorX + request.gapFromAnchor + request.width,
+                    bottom: middleY - request.height / 2,
+                    top: middleY + request.height / 2,
+                });
+            }
         });
     }
 

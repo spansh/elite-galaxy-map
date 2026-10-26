@@ -6,15 +6,29 @@
     "type": "module",
     "main": "./src/index.js",
     "module": "./src/index.js",
+    "types": "./types/index.d.ts",
     "exports": {
-        ".": "./src/index.js",
+        ".": {
+            "types": "./types/index.d.ts",
+            "default": "./src/index.js"
+        },
         "./spansh-loader-worker.js": "./examples/spansh-loader/spansh-loader-worker.js",
-        "./read-lines.js": "./examples/spansh-loader/readLines.js",
-        "./star-classes.js": "./examples/spansh-loader/starClasses.js",
-        "./spansh-route.js": "./src/spanshRoute.js"
+        "./read-lines.js": {
+            "types": "./types/read-lines.d.ts",
+            "default": "./examples/spansh-loader/readLines.js"
+        },
+        "./star-classes.js": {
+            "types": "./types/star-classes.d.ts",
+            "default": "./examples/spansh-loader/starClasses.js"
+        },
+        "./spansh-route.js": {
+            "types": "./types/spansh-route.d.ts",
+            "default": "./src/spanshRoute.js"
+        }
     },
     "files": [
         "src",
+        "types",
         "assets",
         "examples/spansh-loader",
         "scripts",
@@ -23,11 +37,14 @@
     ],
     "sideEffects": false,
     "scripts": {
-        "demo": "vite --config vite.config.js",
+        "demo": "node scripts/serve-demo.mjs",
         "build": "vite build --config vite.config.js",
+        "build:demo": "vite build --config vite.config.js --mode demo",
         "test": "vitest run",
         "lint": "eslint .",
-        "density-map": "node scripts/build-density-map.mjs"
+        "typecheck": "tsc -p test/types",
+        "density-map": "node scripts/build-density-map.mjs",
+        "region-map": "node scripts/build-region-map.mjs"
     },
     "peerDependencies": {
         "three": ">=0.170.0"
@@ -41,6 +58,7 @@
         "eslint": "^10.13.0",
         "globals": "^17.13.0",
         "three": "^0.186.1",
+        "typescript": "^5.9.3",
         "vite": "^8.3.5",
         "vitest": "^5.0.5"
     },

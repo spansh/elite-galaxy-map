@@ -41,6 +41,10 @@ works installed straight from its git repository.
 
 `three` is a peer dependency (0.170 or later).
 
+Type declarations come with it (`types/`), so editors autocomplete options,
+commands and events, and TypeScript projects check them, without the map
+itself needing building. They don't need three's own type package.
+
 For a page without a bundler, `pnpm run build` writes
 `dist/galaxy-map.standalone.js`, with everything but `three` built in; copy
 it to your site and load it with an import map. `dist/` isn't kept in git,
@@ -153,6 +157,8 @@ It accepts `{ type: 'startLoading', url, batchSize, includeNames }` and
 | `backdropSettings` | `{}` | `{ volumetric: {...} }`, see `src/backdrop/VolumetricBackdrop.js` |
 | `fontUrl` | Rajdhani (bundled) | `.ttf`, `.otf` or `.woff` for labels |
 | `gridAppearance` | | Colours and opacities, see `GalacticGrid.js` |
+| `regionMapUrl` | `assets/galaxy-regions.json` (bundled) | The region map, for region borders and names and `findRegion`; `null` for none. See [Regions](#regions). |
+| `regionAppearance` | | Border and name colours, opacities and the name size, see `RegionOverlay.js` |
 | `initialTarget`, `initialDistance` | above the galaxy | Starting view, galactic coordinates |
 | `initialView` | `'angled'` | `'angled'`, or `'topDown'` to look straight down with the core direction at the top |
 | `highlightedSystems` | `[]` | Systems to highlight from the start, as for `highlightSystems` |
@@ -227,9 +233,10 @@ galaxyMap.dispatch({ type: 'setUserInterface', rotate: true, pan: true, zoom: tr
 | `gridLabel` | on | The grid's coordinate label |
 | `loadingOverlay` | on | The progress bar while data loads |
 | `legend` | on | The key to the highlight markers, when the page has given one |
+| `regions` | off | The borders and names of the galaxy's regions |
 | `panel` | on | The whole control panel |
 | `layerList` | on | Panel: the layers, with a box to show or hide each |
-| `displaySettings` | on | Panel: the Galaxy glow, Galaxy image and Grid checkboxes |
+| `displaySettings` | on | Panel: the Galaxy glow, Galaxy image, Grid and Regions checkboxes |
 | `routePicker` | on | Panel: choosing a Spansh route file |
 | `selectionDetails` | on | Panel: the selected system's name, coordinates and distance |
 | `dataLoading` | off | Panel: a data address with Load, Stop and Clear stars |
@@ -378,6 +385,55 @@ In the demo, choose a route file in the panel, or open with
 `?enable=` with any user interface setting, repeated as needed, for example
 `?disable=panel&disable=zoom`.
 
+## Regions
+
+The galaxy's 42 regions (the codex regions, such as Inner Orion Spur) can be
+drawn as borders with their names. They're off by default; switch them on
+with the panel's Regions box, the `regions` user interface setting, or:
+
+```js
+galaxyMap.dispatch({ type: 'setUserInterface', regions: true });
+```
+
+Regions are areas on the galactic plane, so the borders are drawn on the
+grid's plane and follow it to the selected system's height. They're lines a
+few pixels wide at any zoom, rather than coloured areas, so they can be
+read without telling colours apart. Names face the camera, bigger regions
+first. A name that would cover a system's name, a ring or the grid label is
+left out, as is the name of a region too small on screen to hold it, or one
+cut off by the edge of the map.
+
+The panel shows the selected system's region. Pages can look it up too:
+
+```js
+const region = await galaxyMap.findRegion({ x: 0, y: 0, z: 0 });   // { number: 18, name: 'Inner Orion Spur' }
+```
+
+Without a map on the page, `loadGalaxyRegions()` loads the same data:
+
+```js
+import { loadGalaxyRegions } from 'elite-galaxy-map';
+
+const regions = await loadGalaxyRegions();
+regions.regionAt({ x: -9530.5, y: -910.28, z: 19808.13 }).name;   // 'Inner Scutum-Centaurus Arm'
+```
+
+This gives the region at a system's coordinates, as the game shows when
+jumping there. The journal and codex use the region at the corner of the
+system's boxel instead, which differs for a few systems right by a border.
+
+The region map is loaded the first time it's needed (about 37 KB
+compressed). It comes from klightspeed's
+[EliteDangerousRegionMap](https://github.com/klightspeed/EliteDangerousRegionMap)
+(MIT licence), mapped from the game's galaxy map onto the game's own grid of
+4096 / 83 ly (about 49.35 ly) cells. `scripts/build-region-map.mjs` turns
+its `RegionMapData.json` into `assets/galaxy-regions.json`, working out
+where each name goes:
+
+```sh
+node scripts/build-region-map.mjs --input_file RegionMapData.json --output_file assets/galaxy-regions.json
+```
+
 ## Grid
 
 The grid has 10, 100, 1,000 and 10,000 ly squares on one plane, and
@@ -522,54 +578,101 @@ times adding stars and picking in Node.
 
 ```sh
 pnpm install
-pnpm run demo     # examples/ on http://localhost:5173/; ?autoload starts loading
+pnpm run demo        # the demo on http://localhost:5173/; ?autoload starts loading
 pnpm test
-pnpm run lint     # pnpm run lint --fix fixes what it can
-pnpm run build
+pnpm run lint        # pnpm run lint --fix fixes what it can
+pnpm run typecheck
+pnpm run build       # dist/galaxy-map.standalone.js
+pnpm run build:demo  # dist-demo/, the demo as plain files
 ```
 
-On GitHub, `.github/workflows/checks.yml` runs the lint, the tests and the
-build for every push and pull request, on Node.js 24 and 26.
+On GitHub, `.github/workflows/checks.yml` runs the lint, the tests, the type
+check and both builds for every push and pull request, on Node.js 24 and 26.
+
+The type declarations in `types/` are written by hand. A test fails if the
+code gains an export, option, user interface setting or command they don't
+list, and `pnpm run typecheck` compiles `test/types/usage.ts` against them,
+including mistakes that must be caught. Update both when the API changes.
+
+### The demo
+
+`pnpm run demo` (`scripts/serve-demo.mjs`) works like `ember serve`: Vite
+builds the demo into `dist-demo/`, rebuilds it within a second or so of any
+change, and the page reloads itself. It's served by a small static file
+server that only serves the files in `dist-demo/` and `examples/public/`
+(no dotfiles): it lists them, and a request can only fetch a path on that
+list. Vite's own development server isn't used at all, since it serves files
+from the machine on request and scanners on the internet attack it; running
+`vite` on its own just says so.
+
+`pnpm run build:demo` writes the same demo without the reloading: plain
+files to put behind any web server, for a public demo.
 
 Demo parameters: `?data=<url>`, `?autoload`, `?view=topDown`,
-`?backdrop=none`, `?densityMap=<url>`,
-`?routeFile=<url>`, `?foldLayers`, repeatable `?highlight=Name,x,y,z` with `?route`, and
-repeatable `?disable=<setting>` and `?enable=<setting>`. Files in
-`examples/public/` are served from the root of the demo, so a density map
-you've built can be tried there with `?densityMap=/your-map.png`.
+`?backdrop=none`, `?densityMap=<url>`, `?routeFile=<url>`, `?foldLayers`,
+repeatable `?highlight=Name,x,y,z` with `?route`, and repeatable
+`?disable=<setting>` and `?enable=<setting>` (for example `?enable=regions`).
 
 ### Loading dumps in the demo
 
-The demo can't load dumps straight from `downloads.spansh.co.uk`: that
-server doesn't send CORS headers allowing the demo's address (localhost, or
-your development host) to read its files, so the browser blocks the request
-and loading fails. Download the dump into `examples/public/` and load it from
-the demo's own server instead; the demo's data box suggests
-`/systems_neutron.json.gz`, so that one works as it is:
+The demo loads `https://downloads.spansh.co.uk/systems_neutron.json.gz` by
+default: Spansh's download server allows any page to read its dumps. For
+other dumps, give their address with `?data=` or in the data box.
+
+To work offline, or try your own files, put them in `examples/public/`,
+which the demo serves from its root, and load them by path:
 
 ```sh
 curl -o examples/public/systems_neutron.json.gz https://downloads.spansh.co.uk/systems_neutron.json.gz
 ```
 
-Then press Load, or open `http://localhost:5173/?autoload`. For another dump,
-download it the same way and give its path with `?data=/its-name.json.gz` or
-in the data box. (`*.json.gz` files are in `.gitignore`.) The same applies
-to route files given with `?routeFile=`.
+Then open `http://localhost:5173/?data=/systems_neutron.json.gz&autoload`.
+The same goes for density maps (`?densityMap=/your-map.png`) and route files
+(`?routeFile=/your-route.json`). Files added while the demo runs are found
+straight away. (`*.json.gz` files are in `.gitignore`.)
+
+`examples/importmap.html` uses the standalone build without a bundler. It
+loads files from `node_modules/` and `dist/`, so after `pnpm run build`,
+open it through any static file server started in the repository folder
+and listening on localhost only.
 
 ### Choosing the port
 
-The demo uses Vite's usual port, 5173. Set `DEMO_PORT` for another; the
-demo then fails to start, rather than moving to a different port, if that
-one is taken:
+The demo uses port 5173. Set `DEMO_PORT` for another:
 
 ```sh
 DEMO_PORT=8080 pnpm run demo
 ```
 
+### Reaching the demo from another machine
+
+The demo listens on this machine only. Keep it that way, or reach it over
+an SSH tunnel or VPN. Development servers aren't built to face the
+internet, and scanners look for them constantly: within an hour of being
+published, a Vite development server running an earlier version of this
+demo had files read off its machine through a hole in Vite, despite Vite's
+own restrictions.
+
+To reach it from outside a container, listen on every interface inside the
+container, and publish the port on the host's loopback address only:
+
+```sh
+# Inside the container
+DEMO_HOST=0.0.0.0 pnpm run demo
+# Starting the container: 127.0.0.1 keeps the port off the network
+docker run -p 127.0.0.1:5173:5173 ...
+# From your own machine
+ssh -L 5173:localhost:5173 your-server
+```
+
+Docker's `-p 5173:5173` without an address publishes the port on every
+interface, and its firewall rules go around ufw's, so a port published that
+way is open to the internet even when ufw would block it.
+
 ### Opening the demo by another host name
 
-The demo answers to `localhost` and plain IP addresses only. To open it by
-another host name (for example from outside a container), list the names in
+The demo answers to `localhost` and plain IP addresses only, against DNS
+rebinding. To open it by another host name, list the names in
 `DEMO_ALLOWED_HOSTS`, separated by commas; a leading dot allows every name
 under a domain:
 
@@ -582,9 +685,9 @@ With Docker, pass it into the container with
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). Third-party material (the Rajdhani font, and the
-libraries bundled into the standalone build) is listed, with its licences, in
-[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+MIT, see [LICENSE](LICENSE). Third-party material (the Rajdhani font, the
+region map, and the libraries bundled into the standalone build) is listed,
+with its licences, in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
 
 ## Credits
 
@@ -594,6 +697,9 @@ libraries bundled into the standalone build) is listed, with its licences, in
 - Drawn with [three.js](https://threejs.org), with text by
   [troika-three-text](https://github.com/protectwise/troika).
 - Labels use the Rajdhani font by Indian Type Foundry.
+- The region map is from Ben Peddell (klightspeed)'s
+  [EliteDangerousRegionMap](https://github.com/klightspeed/EliteDangerousRegionMap),
+  built on the Frontier forum's work mapping the regions' edges.
 - Star data from [Spansh](https://spansh.co.uk)'s galaxy dumps, from the
   journal data uploaded by Elite Dangerous players.
 - Elite Dangerous is a game by Frontier Developments. This project isn't

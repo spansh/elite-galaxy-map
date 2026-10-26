@@ -10,6 +10,8 @@ import { COMMAND_TYPES, validateCommand } from './commands.js';
 import { galacticToScene } from './coordinates.js';
 import { LoadingOverlay } from './LoadingOverlay.js';
 import { LEGEND_CORNERS, Legend } from './Legend.js';
+import { GALAXY_REGIONS_URL, loadGalaxyRegions } from './galaxyRegions.js';
+import { RegionOverlay } from './RegionOverlay.js';
 import { ToneMappingPass } from './ToneMappingPass.js';
 import { MOVEMENT_KEYS, calculateKeyboardMovement, movementKeyName } from './keyboardMovement.js';
 import { directionTowardsCamera, frameSystems } from './cameraFraming.js';
@@ -29,6 +31,11 @@ export const DEFAULT_OPTIONS = Object.freeze({
     backdropSettings: {},
     fontUrl: DEFAULT_FONT_URL,
     gridAppearance: {},
+    // The map of the galaxy's regions, for their borders and names (the
+    // regions user interface setting) and findRegion. null for none.
+    regionMapUrl: GALAXY_REGIONS_URL,
+    // Colours, opacities and the name size; see RegionOverlay.js.
+    regionAppearance: {},
     // Parts of the map's own interface to switch off (or on), such as
     // { rotate: false, panel: false }; see userInterface.js for the list.
     userInterface: {},
@@ -163,6 +170,9 @@ export class GalaxyMap extends EventTarget {
         this.layerChangeIsPending = false;
         this.frameStatistics = { starsLoaded: 0, starsDrawn: 0, cellsOnScreen: 0, crossFadesInProgress: 0 };
         this.isDisposed = false;
+        // The region map and its borders and names, made when first needed.
+        this.regionsPromise = undefined;
+        this.regionOverlay = undefined;
         validateUserInterfaceSettings(this.options.userInterface, 'The userInterface option');
         this.userInterface = { ...DEFAULT_USER_INTERFACE, ...this.options.userInterface };
 
@@ -776,12 +786,62 @@ export class GalaxyMap extends EventTarget {
         this.grid.setLabelEnabled(settings.gridLabel);
         this.loadingOverlay.setEnabled(settings.loadingOverlay);
         this.legend.setEnabled(settings.legend);
+        this.showRegions(settings.regions);
         this.dispatchEvent(new CustomEvent('userinterfacechange', { detail: { userInterface: this.getUserInterface() } }));
         this.requestRender();
     }
 
     getUserInterface() {
         return { ...this.userInterface };
+    }
+
+    // ---- Regions ----------------------------------------------------------
+
+    // Loads the region map the first time it's needed. Resolves to the
+    // GalaxyRegions, or null when there is none (regionMapUrl null) or it
+    // failed to load.
+    loadRegions() {
+        if (this.regionsPromise === undefined) {
+            this.regionsPromise = this.options.regionMapUrl === null
+                ? Promise.resolve(null)
+                : loadGalaxyRegions(this.options.regionMapUrl).catch(error => {
+                    console.error('Galaxy regions failed to load:', error);
+                    return null;
+                });
+        }
+        return this.regionsPromise;
+    }
+
+    // The region at galactic coordinates, as { number, name }, or null
+    // outside the map or without one. Loads the region map if need be.
+    async findRegion(coordinates) {
+        const regions = await this.loadRegions();
+        const region = regions?.regionAt(coordinates) ?? null;
+        return region === null ? null : { number: region.number, name: region.name };
+    }
+
+    showRegions(isShown) {
+        if (this.regionOverlay !== undefined) {
+            this.regionOverlay.visible = isShown;
+            return;
+        }
+        if (!isShown) {
+            return;
+        }
+        this.loadRegions().then(regions => {
+            if (regions === null || this.isDisposed || this.regionOverlay !== undefined) {
+                return;
+            }
+            this.regionOverlay = new RegionOverlay({
+                regions,
+                fontUrl: this.options.fontUrl,
+                appearance: this.options.regionAppearance,
+                onTextReady: () => this.requestRender(),
+            });
+            this.regionOverlay.visible = this.userInterface.regions;
+            this.overlayScene.add(this.regionOverlay.sceneObject);
+            this.requestRender();
+        });
     }
 
     // True if the camera has moved, turned or changed lens visibly since
@@ -1019,6 +1079,18 @@ export class GalaxyMap extends EventTarget {
             gridHeight: this.grid.galacticHeight,
             otherObstacles: gridLabelArea === null ? [] : [gridLabelArea],
         });
+        // Region names go wherever system names, rings and the grid label
+        // have left room.
+        if (this.regionOverlay?.visible) {
+            this.regionOverlay.setGalacticHeight(this.grid.galacticHeight);
+            this.regionOverlay.updateForCamera({
+                camera: this.camera,
+                pixelsPerLightYearAtUnitDistance: this.cssPixelsPerLightYearAtUnitDistance,
+                viewportWidth: this.cssWidth,
+                viewportHeight: this.cssHeight,
+                obstacles: this.markers.screenAreasInUse,
+            });
+        }
 
         // While the view moves, draw at lower resolution and with fewer stars
         // (see renderQuality.js).
@@ -1090,6 +1162,7 @@ export class GalaxyMap extends EventTarget {
         this.markers.dispose();
         this.loadingOverlay.dispose();
         this.legend.dispose();
+        this.regionOverlay?.dispose();
         this.controlPanel.dispose();
         this.toneMappingPass.dispose();
         this.renderer.dispose();

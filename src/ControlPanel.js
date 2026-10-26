@@ -205,6 +205,7 @@ export class ControlPanel {
             section.hidden = !userInterface[settingName];
         }
         this.gridCheckbox.checked = userInterface.grid;
+        this.regionsCheckbox.checked = userInterface.regions;
     }
 
     createDataLoadingSection(dataUrl) {
@@ -329,6 +330,7 @@ export class ControlPanel {
         this.glowCheckbox = buildElement('input', { type: 'checkbox' });
         this.galaxyImageCheckbox = buildElement('input', { type: 'checkbox' });
         this.gridCheckbox = buildElement('input', { type: 'checkbox', checked: true });
+        this.regionsCheckbox = buildElement('input', { type: 'checkbox' });
         this.showBackdrop(this.galaxyMap.getBackdrop());
         // Each box changes only its own part, so neither undoes a change the
         // page made to the other with setBackdrop.
@@ -341,11 +343,19 @@ export class ControlPanel {
         this.gridCheckbox.addEventListener('change', () => {
             this.galaxyMap.dispatch({ type: 'setUserInterface', grid: this.gridCheckbox.checked });
         });
-        return buildElement('div', { className: 'egm-panel-section' },
-            buildElement('h2', {}, 'Display'),
+        this.regionsCheckbox.addEventListener('change', () => {
+            this.galaxyMap.dispatch({ type: 'setUserInterface', regions: this.regionsCheckbox.checked });
+        });
+        const settings = [
             buildElement('label', {}, this.glowCheckbox, 'Galaxy glow'),
             buildElement('label', {}, this.galaxyImageCheckbox, 'Galaxy image'),
-            buildElement('label', {}, this.gridCheckbox, 'Grid'));
+            buildElement('label', {}, this.gridCheckbox, 'Grid'),
+        ];
+        // Only offered when the map has a region map to draw.
+        if (this.galaxyMap.options.regionMapUrl !== null) {
+            settings.push(buildElement('label', {}, this.regionsCheckbox, 'Regions'));
+        }
+        return buildElement('div', { className: 'egm-panel-section' }, buildElement('h2', {}, 'Display'), ...settings);
     }
 
     // Keeps the boxes in step with the backdrop, however it was changed.
@@ -366,11 +376,21 @@ export class ControlPanel {
         }
         const { x, y, z } = system.coordinates;
         const distanceFromSol = Math.hypot(x, y, z);
+        const regionLine = document.createTextNode('');
         this.selectionDetails.replaceChildren(
             buildElement('strong', {}, system.name ?? '(unnamed)'),
             `\n${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)}`,
             `\n${distanceFromSol.toLocaleString(undefined, { maximumFractionDigits: 0 })} ly from Sol`,
+            regionLine,
         );
+        // The region needs the region map, which may still be loading. By
+        // then another system may be selected, whose details have their own
+        // line; this one is no longer on the page and nothing shows.
+        this.galaxyMap.findRegion(system.coordinates).then(region => {
+            if (region !== null) {
+                regionLine.textContent = `\n${region.name}`;
+            }
+        });
     }
 
     dispose() {
