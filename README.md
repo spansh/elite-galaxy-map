@@ -683,6 +683,18 @@ DEMO_ALLOWED_HOSTS=dev.example.com,.example.org pnpm run demo
 With Docker, pass it into the container with
 `-e DEMO_ALLOWED_HOSTS=dev.example.com`.
 
+### What the demo logs
+
+The demo logs the requests it refuses: a host name it doesn't answer to, a
+method other than GET or HEAD, or a path it doesn't serve (apart from
+`/favicon.ico`, which browsers ask for on their own). In normal use there
+are none, so a run of them, such as `/@fs/…` or `/.env`, means something
+is probing the server. Each line gives the time, remote address, method,
+Host header, path and status; what the visitor sent is written as JSON
+strings, so it can't add lines of its own. Inside a container the remote
+address is usually the container network's gateway rather than the visitor.
+Set `DEMO_LOG=all` to log every request.
+
 ## Licence
 
 MIT, see [LICENSE](LICENSE). Third-party material (the Rajdhani font, the

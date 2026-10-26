@@ -22,6 +22,10 @@
 //                       localhost and IP addresses, comma separated; a
 //                       leading dot allows every name under a domain. Other
 //                       names are refused, against DNS rebinding.
+//   DEMO_LOG            "all" to log every request. Otherwise only refused
+//                       ones are logged (bad host name or method, or a path
+//                       that isn't served), which is what someone probing
+//                       the server sends.
 //
 //     DEMO_PORT=8080 pnpm run demo
 //
@@ -76,6 +80,7 @@ const allowedHostNames = (environmentSetting('ALLOWED_HOSTS') ?? '')
     .split(',')
     .map(hostName => hostName.trim().toLowerCase())
     .filter(hostName => hostName !== '');
+const logsEveryRequest = environmentSetting('LOG') === 'all';
 
 const CONTENT_TYPES = {
     '.html': 'text/html; charset=utf-8',
@@ -187,6 +192,32 @@ function isAllowedHost(hostHeader) {
         : hostName === allowed);
 }
 
+// One line per request: time, remote address, method, Host header, path and
+// status. What the visitor sent is written as JSON strings, so it can't add
+// lines of its own or control characters to the log. Inside a container the
+// remote address is usually the container network's gateway, not the visitor.
+function logRequest(request, response) {
+    const path = request.url ?? '';
+    // Browsers ask for a favicon on their own: no sign of anyone probing.
+    const isRefused = response.statusCode >= 400 && path.split('?')[0] !== '/favicon.ico';
+    if (!logsEveryRequest && !isRefused) {
+        return;
+    }
+    const line = [
+        new Date().toISOString(),
+        request.socket.remoteAddress ?? '-',
+        request.method,
+        JSON.stringify(request.headers.host ?? ''),
+        JSON.stringify(path),
+        response.statusCode,
+    ].join(' ');
+    if (isRefused) {
+        console.warn(line);
+    } else {
+        console.log(line);
+    }
+}
+
 function sendText(response, statusCode, text) {
     response.writeHead(statusCode, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
     response.end(text);
@@ -235,6 +266,7 @@ async function sendFile(request, response, absolutePath) {
 }
 
 function handleRequest(request, response) {
+    response.on('close', () => logRequest(request, response));
     if (!isAllowedHost(request.headers.host)) {
         sendText(response, 403, `This server doesn't answer to the host name "${request.headers.host}". Add it to ${SETTINGS.environmentPrefix}_ALLOWED_HOSTS to allow it.`);
         return;
