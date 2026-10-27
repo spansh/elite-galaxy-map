@@ -51,6 +51,25 @@ export function findPlaceOfEachSystem(systems) {
   });
 }
 
+// Whether a place's stops are numbered, for each way of numbering them,
+// given the stops in its label.
+const STOP_NUMBERING_TESTS = {
+  shared: labelledEntries => labelledEntries.length > 1,
+  all: () => true,
+  none: () => false,
+};
+
+export const STOP_NUMBERINGS = Object.freeze(Object.keys(STOP_NUMBERING_TESTS));
+
+// Throws unless numberStops is one of STOP_NUMBERINGS; settingName is how
+// the page gave it, for the message.
+export function checkStopNumbering(numberStops, settingName) {
+  if (!STOP_NUMBERINGS.includes(numberStops)) {
+    const choices = STOP_NUMBERINGS.map(choice => `'${choice}'`);
+    throw new Error(`${settingName} must be ${choices.slice(0, -1).join(', ')} or ${choices.at(-1)}, not ${JSON.stringify(numberStops)}`);
+  }
+}
+
 const NAMING_RULE_STRENGTHS = new Map([[false, 0], ['ifRoom', 1], [true, 2]]);
 
 // A rule the map doesn't know counts as the weakest.
@@ -61,13 +80,13 @@ function strongestNamingRule(namingRules) {
 
 // One line per distinct name, in the order the names first appear, or the
 // system's name and then one indented line per station, where there is more
-// than one station or the stops are numbered.
+// than one station or more than one numbered stop.
 function placeLabelText(entries, { numbersStops, unnamedSystemText }) {
   const systemName = entries[0].system.system;
   const isStationOfThisSystem = system => typeof system.station === 'string' && system.system === systemName;
   const stationCount = new Set(entries.map(({ system }) => system.station)).size;
   const isStationsInOneSystem = typeof systemName === 'string' && entries.every(({ system }) => isStationOfThisSystem(system))
-    && (stationCount > 1 || numbersStops);
+    && (stationCount > 1 || (numbersStops && entries.length > 1));
   const stopNumbersByLine = new Map();
   for (const { system, stopNumber } of entries) {
     const line = isStationsInOneSystem ? system.station : system.name ?? unnamedSystemText;
@@ -90,11 +109,14 @@ function placeLabelText(entries, { numbersStops, unnamedSystemText }) {
 //                the shape of the first entry with one, and its colour (or
 //                the first entry's colour with no shape there), and a centre
 //                dot if any entry has one, so no entry's shape is lost
+// numberStops, on a route: 'shared' numbers the stops of places with more
+// than one, 'all' every stop, 'none' none.
 // placeOfEachSystem: from findPlaceOfEachSystem, when already worked out.
 // unnamedSystemText: the name for systems without one.
 export function groupHighlightsByPlace(systems, {
   asRoute = false,
   showNames = true,
+  numberStops = 'shared',
   placeOfEachSystem = findPlaceOfEachSystem(systems),
   unnamedSystemText = DEFAULT_TEXT.unnamedSystem,
 } = {}) {
@@ -112,7 +134,7 @@ export function groupHighlightsByPlace(systems, {
     return {
       system: labelledEntries[0].system,
       systems: placeSystems,
-      labelText: placeLabelText(labelledEntries, { numbersStops: asRoute && entries.length > 1, unnamedSystemText }),
+      labelText: placeLabelText(labelledEntries, { numbersStops: asRoute && STOP_NUMBERING_TESTS[numberStops](labelledEntries), unnamedSystemText }),
       namingRule: strongestNamingRule(entries.map(entry => entry.namingRule)),
       colour: (firstWithShape ?? firstWithColour)?.colour,
       shape: firstWithShape?.shape,

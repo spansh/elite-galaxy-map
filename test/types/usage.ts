@@ -50,7 +50,7 @@ new GalaxyMap(element, {
 });
 
 galaxyMap.dispatch({ type: 'moveCamera', view: 'topDown' });
-galaxyMap.dispatch({ type: 'highlightSystems', systems: routeSystemsFromSpanshResult({}), asRoute: true, showNames: 'ifRoom', frame: true });
+galaxyMap.dispatch({ type: 'highlightSystems', systems: routeSystemsFromSpanshResult({}), asRoute: true, showNames: 'ifRoom', numberStops: 'all', frame: true });
 galaxyMap.dispatch({ type: 'setLegend', entries: [{ label: 'Reference', colour: '#6ea8fe', shape: 'square' }] });
 galaxyMap.dispatch({ type: 'setUserInterface', panel: false });
 galaxyMap.dispatch({ type: COMMAND_TYPES.clearHighlights });

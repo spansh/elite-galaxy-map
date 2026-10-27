@@ -7,7 +7,7 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { Text } from 'troika-three-text';
 import { galacticToScene } from './coordinates.js';
 import { formatGridCoordinates } from './gridMaths.js';
-import { findLegsTravelledBothWays, findPlaceOfEachSystem, groupHighlightsByPlace } from './highlightPlaces.js';
+import { checkStopNumbering, findLegsTravelledBothWays, findPlaceOfEachSystem, groupHighlightsByPlace } from './highlightPlaces.js';
 import { chooseRingsToDraw, placeLabels } from './labelPlacement.js';
 import { createCentreDotGeometry, createMarkerOutlineGeometry, hasDistinctMarker } from './markerShapes.js';
 import { RouteArrows } from './RouteArrows.js';
@@ -320,8 +320,10 @@ export class SystemMarkers {
   // whose label lists them all (see highlightPlaces.js). Replaces any
   // earlier highlights.
   // Returns a promise that resolves when all the names are ready to draw.
-  setHighlightedSystems(systems, { asRoute = false, showNames = true } = {}) {
-    this.highlightRequest = { systems, options: { asRoute, showNames } };
+  setHighlightedSystems(systems, { asRoute = false, showNames = true, numberStops = 'shared' } = {}) {
+    // Checked before anything changes, so a mistake leaves the old highlights.
+    checkStopNumbering(numberStops, 'numberStops');
+    this.highlightRequest = { systems, options: { asRoute, showNames, numberStops } };
     for (const marker of this.highlightMarkers) {
       this.sceneObject.remove(marker.sceneObject);
       marker.dispose();
@@ -333,7 +335,7 @@ export class SystemMarkers {
     }
     this.highlightedSystemList = systems;
     const unnamedSystemText = this.unnamedSystemText;
-    this.highlightMarkers = groupHighlightsByPlace(systems, { asRoute, showNames, placeOfEachSystem, unnamedSystemText }).map(place => {
+    this.highlightMarkers = groupHighlightsByPlace(systems, { asRoute, showNames, numberStops, placeOfEachSystem, unnamedSystemText }).map(place => {
       const isNamedAlways = place.namingRule === true;
       const marker = new SystemMarker({
         fontUrl: this.fontUrl,

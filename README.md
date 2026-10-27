@@ -84,7 +84,7 @@ transferable so it isn't copied between threads.
 | `setLayerVisibility` | `layer`, `visible` | |
 | `selectSystem` | `system`, `flyTo` | Selects `{ name, coordinates: { x, y, z } }` (for example from a search box), or `null` to clear. |
 | `moveCamera` | `target`, `distance`, `view` | Flies to look at `target`. Anything left out stays as it is, so `{ type: 'moveCamera', view: 'topDown' }` turns to look straight down at the same point. |
-| `highlightSystems` | `systems`, `asRoute`, `showNames`, `frame`, `view` | Shows systems with a ring and their name, replacing earlier highlights. See below. |
+| `highlightSystems` | `systems`, `asRoute`, `showNames`, `numberStops`, `frame`, `view` | Shows systems with a ring and their name, replacing earlier highlights. See below. |
 | `clearHighlights` | | |
 | `setLegend` | `entries` | Shows a key to the highlight markers. See [Legend](#legend). |
 | `setText` | `text`, `locale` | Replaces the map's own text. See [Text and translations](#text-and-translations). |
@@ -166,6 +166,7 @@ It accepts `{ type: 'startLoading', url, batchSize, includeNames }` and
 | `highlightedSystems` | `[]` | Systems to highlight from the start, as for `highlightSystems` |
 | `highlightsAreRoute` | `false` | Join the starting highlights in order with a line |
 | `showHighlightNames` | `true` | `true` names every highlighted system, `'ifRoom'` those whose name fits, `false` none |
+| `highlightStopNumbers` | `'shared'` | Stop numbers on a route: `'shared'`, `'all'` or `'none'` (see [Highlighted systems and routes](#highlighted-systems-and-routes)) |
 | `frameHighlightedSystems` | `true` | Start with the camera fitting the highlights on screen, instead of at `initialTarget` |
 | `framingMinimumDistance` | `1000` | Closest the camera comes when framing, in light years, for example on one system |
 | `highlightColour` | `'#ffd27a'` | Rings, names and route lines of highlights |
@@ -338,12 +339,19 @@ Cemiess
   5. Titius Station
 ```
 
+`numberStops` chooses which stops are numbered, defaulting to the
+`highlightStopNumbers` option: `'shared'` (its default) only those at places
+with more than one stop in the label, `'all'` every named stop, such as `2. Gongalungul - Andoyer Station`,
+which suits short routes such as trade routes, and `'none'` none. The
+panel's route picker numbers every stop of a trade route.
+
 Systems count as the same place within 0.1 light years. Clicking the shared
 ring picks the first system named on it. The ring takes the shape of the
 first system with one, and that system's colour, and a centre dot if any
-system there has one. A system with `showName: false` is left out of the name
-unless none there is named. On a leg the route also travels the other way, each arrow moves along
-towards its own leg's end, so the two don't sit on top of each other.
+system there has one. A system with `showName: false` is left out of the
+name unless none there is named. On a leg the route also travels the other
+way, each arrow moves along towards its own leg's end, so the two don't sit
+on top of each other.
 
 Naming is set by `showNames` (or the `showHighlightNames` option), and a
 system's own `showName` overrides it:

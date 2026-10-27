@@ -81,6 +81,8 @@ describe('naming rules in highlight commands', () => {
     expect(() => validateCommand({ type: COMMAND_TYPES.highlightSystems, systems, showNames: 'sometimes' })).toThrow(/true, false or 'ifRoom'/);
     expect(() => validateCommand({ type: COMMAND_TYPES.highlightSystems, systems: [{ name: 'Sol', coordinates: SOL, showName: 1 }] }))
       .toThrow(/system 0 \(Sol\) showName/);
+    expect(() => validateCommand({ type: COMMAND_TYPES.highlightSystems, systems, numberStops: 'all' })).not.toThrow();
+    expect(() => validateCommand({ type: COMMAND_TYPES.highlightSystems, systems, numberStops: 'every' })).toThrow(/numberStops must be 'shared', 'all' or 'none', not "every"/);
   });
 });
 

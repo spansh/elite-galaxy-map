@@ -19,6 +19,8 @@ export type MarkerShape = 'circle' | 'diamond' | 'square' | 'triangle';
 
 /** true names every system, 'ifRoom' names those whose label fits, false names none (they still show on hover). */
 export type NamingRule = boolean | 'ifRoom';
+/** Stop numbers on a route: at places with more than one stop, on every named stop, or none. */
+export type StopNumbering = 'shared' | 'all' | 'none';
 
 export type BackdropStyle = 'volumetric' | 'none';
 
@@ -264,6 +266,7 @@ export interface GalaxyMapOptions {
   framingMinimumDistance: number;
   highlightsAreRoute: boolean;
   showHighlightNames: NamingRule;
+  highlightStopNumbers: StopNumbering;
   highlightColour: string;
   legend: LegendEntry[];
   legendCorner: LegendCorner;
@@ -331,6 +334,7 @@ export interface HighlightSystemsCommand {
   systems: HighlightedSystem[];
   asRoute?: boolean;
   showNames?: NamingRule;
+  numberStops?: StopNumbering;
   frame?: boolean;
   view?: CameraView;
 }

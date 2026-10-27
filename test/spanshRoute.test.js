@@ -140,6 +140,14 @@ describe('routeSystemsFromSpanshResult', () => {
     expect(places).toHaveLength(5);
     expect(places[2].labelText).toBe('Cemiess\n  3. Meech Dock\n  5. Titius Station');
     expect(places[1].labelText).toBe('Gongalungul - Andoyer Station');
+    const numberedPlaces = groupHighlightsByPlace(routeSystemsFromSpanshResult(tradeRoute), { asRoute: true, numberStops: 'all' });
+    expect(numberedPlaces.map(place => place.labelText)).toEqual([
+      '1. Fuelum - Wollheim Vision',
+      '2. Gongalungul - Andoyer Station',
+      'Cemiess\n  3. Meech Dock\n  5. Titius Station',
+      '4. ICZ IW-W c1-17 - Hynek Enterprise',
+      '6. Shui Wei Sector KN-S b4-5 - Guabanseh',
+    ]);
   });
 
   it('explains routes it cannot use', () => {

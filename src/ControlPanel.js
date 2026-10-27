@@ -369,10 +369,12 @@ export class ControlPanel {
       this.showRouteText({ key: 'routeEmpty' });
       return;
     }
-    this.galaxyMap.dispatch({ type: 'highlightSystems', systems, asRoute: true, showNames: 'ifRoom', frame: true });
+    // Trade routes go station to station, each hop perhaps several jumps,
+    // and are short enough to number every stop.
+    const isTradeRoute = systems.some(system => system.marketId !== undefined);
+    const numberStops = isTradeRoute ? 'all' : 'shared';
+    this.galaxyMap.dispatch({ type: 'highlightSystems', systems, asRoute: true, showNames: 'ifRoom', numberStops, frame: true });
     this.showRouteLegend(systems);
-    // Trade routes go station to station, each hop perhaps several jumps.
-    const isTradeRoute = systems.some(system => system.station !== undefined);
     const ends = { start: systems[0].name, end: systems[systems.length - 1].name };
     this.showRouteText(isTradeRoute
       ? { key: 'tradeRouteSummary', values: { ...ends, hopCount: systems.length - 1 } }

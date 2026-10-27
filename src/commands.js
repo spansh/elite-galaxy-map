@@ -11,6 +11,7 @@ import { BACKDROP_STYLES } from './backdrop/GalaxyBackdrop.js';
 import { MARKER_SHAPE_NAMES } from './markerShapes.js';
 import { validateUserInterfaceSettings } from './userInterface.js';
 import { checkText } from './mapText.js';
+import { checkStopNumbering } from './highlightPlaces.js';
 
 export const COMMAND_TYPES = Object.freeze({
   // { type, layer, colour?, starSizeInLightYears?, minimumPixelSize?,
@@ -41,7 +42,8 @@ export const COMMAND_TYPES = Object.freeze({
   // turns the camera to look straight down at the same point.
   moveCamera: 'moveCamera',
   // { type, systems: [{ name, coordinates: {x, y, z}, key?, colour?, shape?, centreDot?, showName?, system?, station? }],
-  //   asRoute?: boolean, showNames?: boolean | 'ifRoom', frame?: boolean, view?: 'angled' | 'topDown' }
+  //   asRoute?: boolean, showNames?: boolean | 'ifRoom', numberStops?: 'shared' | 'all' | 'none',
+  //   frame?: boolean, view?: 'angled' | 'topDown' }
   // Shows each system with a ring and its name, replacing earlier
   // highlights. With asRoute, a line joins them in the order given.
   // A system's shape ('circle', 'diamond', 'square' or 'triangle') and
@@ -49,8 +51,10 @@ export const COMMAND_TYPES = Object.freeze({
   // on colour.
   // showNames: true names every system, moving labels to make room;
   // 'ifRoom' names those whose label fits beside them; false names none.
-  // A system's own showName overrides it. With frame, the camera moves to
-  // fit them all on screen.
+  // A system's own showName overrides it. numberStops, on a route, numbers
+  // the stops of places with more than one ('shared'), every named stop
+  // ('all') or none; the highlightStopNumbers option if left out. With
+  // frame, the camera moves to fit them all on screen.
   highlightSystems: 'highlightSystems',
   // { type }
   clearHighlights: 'clearHighlights',
@@ -190,6 +194,9 @@ export function validateCommand(command) {
     const namingRules = [true, false, 'ifRoom'];
     if (command.showNames !== undefined && !namingRules.includes(command.showNames)) {
       throw new Error(`highlightSystems showNames must be true, false or 'ifRoom', not ${JSON.stringify(command.showNames)}`);
+    }
+    if (command.numberStops !== undefined) {
+      checkStopNumbering(command.numberStops, 'highlightSystems numberStops');
     }
     command.systems.forEach((system, index) => {
       if (system?.showName !== undefined && !namingRules.includes(system.showName)) {

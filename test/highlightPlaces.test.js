@@ -79,6 +79,31 @@ describe('groupHighlightsByPlace', () => {
     expect(places[0].labelText).toBe('1, 3. Fuelum');
   });
 
+  it('numbers every stop with numberStops all, and none with numberStops none', () => {
+    const station = (system, stationName, coordinates) => stop(`${system} - ${stationName}`, coordinates, { system, station: stationName });
+    const route = [
+      station('Fuelum', 'Wollheim Vision', FUELUM),
+      station('Gongalungul', 'Andoyer Station', GONGALUNGUL),
+      station('Cemiess', 'Meech Dock', CEMIESS),
+      station('Cemiess', 'Titius Station', CEMIESS),
+    ];
+    expect(groupHighlightsByPlace(route, { asRoute: true, numberStops: 'all' }).map(place => place.labelText)).toEqual([
+      '1. Fuelum - Wollheim Vision',
+      '2. Gongalungul - Andoyer Station',
+      'Cemiess\n  3. Meech Dock\n  4. Titius Station',
+    ]);
+    expect(groupHighlightsByPlace(route, { asRoute: true, numberStops: 'none' }).map(place => place.labelText)).toEqual([
+      'Fuelum - Wollheim Vision',
+      'Gongalungul - Andoyer Station',
+      'Cemiess\n  Meech Dock\n  Titius Station',
+    ]);
+    // A hidden return visit doesn't count towards a shared place.
+    const hiddenReturn = [...route, { ...route[0], showName: false }];
+    expect(groupHighlightsByPlace(hiddenReturn, { asRoute: true })[0].labelText).toBe('Fuelum - Wollheim Vision');
+    // Numbers are for routes only.
+    expect(groupHighlightsByPlace(route, { numberStops: 'all' })[0].labelText).toBe('Fuelum - Wollheim Vision');
+  });
+
   it('lists stops by name when they are not all stations of one system', () => {
     const places = groupHighlightsByPlace([
       stop('Cemiess - Meech Dock', CEMIESS, { system: 'Cemiess', station: 'Meech Dock' }),

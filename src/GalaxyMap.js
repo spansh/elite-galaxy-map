@@ -18,6 +18,7 @@ import { directionTowardsCamera, frameSystems } from './cameraFraming.js';
 import { DEFAULT_USER_INTERFACE, validateUserInterfaceSettings } from './userInterface.js';
 import { ControlPanel } from './ControlPanel.js';
 import { MapText } from './mapText.js';
+import { checkStopNumbering } from './highlightPlaces.js';
 import { chooseStarsToDraw, fadeForSample, hasGrownEnoughToShuffle, orderCellsForShuffling } from './levelOfDetail.js';
 
 const DEFAULT_FONT_URL = new URL('../assets/rajdhani-latin-600-normal.woff', import.meta.url).href;
@@ -66,6 +67,10 @@ export const DEFAULT_OPTIONS = Object.freeze({
   // names none. A system's own showName overrides this, for example to
   // always name the start and end of a long route.
   showHighlightNames: true,
+  // Stop numbers on a route, unless highlightSystems says otherwise:
+  // 'shared' at places with more than one stop (a route coming back, or two
+  // stations in one system), 'all' on every named stop, 'none' on none.
+  highlightStopNumbers: 'shared',
   highlightColour: '#ffd27a',
   // A key to the highlight markers, as [{ label, colour?, shape?,
   // centreDot?, count? }] (see the setLegend command), and which corner
@@ -182,6 +187,7 @@ export class GalaxyMap extends EventTarget {
     this.regionOverlay = undefined;
     validateUserInterfaceSettings(this.options.userInterface, 'The userInterface option');
     this.mapText = new MapText(this.options.text, this.options.locale);
+    checkStopNumbering(this.options.highlightStopNumbers, 'The highlightStopNumbers option');
     this.userInterface = { ...DEFAULT_USER_INTERFACE, ...this.options.userInterface };
 
     this.createRenderer();
@@ -213,6 +219,7 @@ export class GalaxyMap extends EventTarget {
         view: this.options.initialView,
         asRoute: this.options.highlightsAreRoute,
         showNames: this.options.showHighlightNames,
+        numberStops: this.options.highlightStopNumbers,
         animate: false,
       });
     }
@@ -496,6 +503,7 @@ export class GalaxyMap extends EventTarget {
           view: command.view,
           asRoute: command.asRoute ?? false,
           showNames: command.showNames ?? true,
+          numberStops: command.numberStops ?? this.options.highlightStopNumbers,
         });
         break;
       case COMMAND_TYPES.clearHighlights:
@@ -748,8 +756,8 @@ export class GalaxyMap extends EventTarget {
   // highlights; with asRoute, a line joins them in order. With frame, the
   // camera moves to fit them all on screen, looking from `view` ('angled'
   // or 'topDown'; the current direction if not given).
-  highlightSystems(systems, { frame = false, view, asRoute = false, showNames = true, animate = true } = {}) {
-    this.markers.setHighlightedSystems(systems, { asRoute, showNames }).then(() => this.requestRender());
+  highlightSystems(systems, { frame = false, view, asRoute = false, showNames = true, numberStops = this.options.highlightStopNumbers, animate = true } = {}) {
+    this.markers.setHighlightedSystems(systems, { asRoute, showNames, numberStops }).then(() => this.requestRender());
     // What is under the pointer may have changed (a hovered route stop
     // gone, say), so look again.
     this.hoverCheckIsNeeded = true;
