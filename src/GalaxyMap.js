@@ -306,10 +306,13 @@ export class GalaxyMap extends EventTarget {
       // Clicking the map gives it keyboard focus for the arrow keys.
       // preventScroll stops the page jumping to bring it into view.
       canvas.focus({ preventScroll: true });
-      // Only the first finger of a touch counts towards a click, so
-      // lifting one finger of a pinch doesn't select a star.
+      // Only the first finger of a touch counts towards a click, and a
+      // second finger makes it a pinch, so lifting either finger of a pinch
+      // doesn't select or deselect.
       if (event.button === 0 && event.isPrimary) {
         this.pointerPressPosition = { x: event.clientX, y: event.clientY };
+      } else if (!event.isPrimary) {
+        this.pointerPressPosition = null;
       }
     };
     this.handlePointerMove = event => {
@@ -336,6 +339,8 @@ export class GalaxyMap extends EventTarget {
       const clickedSystem = this.findSystemAtClientPosition(event.clientX, event.clientY);
       if (clickedSystem !== null) {
         this.selectSystem(clickedSystem, { flyTo: this.userInterface.flyToSelection });
+      } else {
+        this.deselectForUser();
       }
     };
     this.handlePointerLeave = () => {
@@ -355,6 +360,14 @@ export class GalaxyMap extends EventTarget {
     canvas.tabIndex = 0;
     canvas.style.outline = 'none';
     this.handleKeyDown = event => {
+      const isPlainEscape = event.key === 'Escape' && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey;
+      if (isPlainEscape && this.userInterface.selectByClick && this.selectedSystem !== null) {
+        // Kept from the page, so a dialog the map is in doesn't close too.
+        event.preventDefault();
+        event.stopPropagation();
+        this.deselectForUser();
+        return;
+      }
       const keyName = movementKeyName(event.key, event.shiftKey);
       if (!this.userInterface.keyboardMovement || MOVEMENT_KEYS[keyName] === undefined || event.altKey || event.ctrlKey || event.metaKey) {
         return;
@@ -723,7 +736,8 @@ export class GalaxyMap extends EventTarget {
   // ---- Selection and hover ----------------------------------------------
 
   selectSystem(system, { flyTo = true } = {}) {
-    if (isSameSystem(system, this.selectedSystem) && !flyTo) {
+    const isAlreadyClear = (system ?? null) === null && this.selectedSystem === null;
+    if (isAlreadyClear || (isSameSystem(system, this.selectedSystem) && !flyTo)) {
       return;
     }
     this.selectedSystem = system ?? null;
@@ -739,6 +753,16 @@ export class GalaxyMap extends EventTarget {
     }
     this.dispatchEvent(new CustomEvent('systemselect', { detail: { system: this.selectedSystem } }));
     this.requestRender();
+  }
+
+  // Clicking empty space or pressing Escape: also stops any flight to the
+  // system that was selected.
+  deselectForUser() {
+    if (this.selectedSystem === null) {
+      return;
+    }
+    this.cameraFlight = null;
+    this.selectSystem(null);
   }
 
   setHoveredSystem(system) {

@@ -19,7 +19,8 @@ export const DEFAULT_USER_INTERFACE = Object.freeze({
   keyboardMovement: true,
   // A ring and name on the star under the pointer.
   hover: true,
-  // Clicking a star to select it.
+  // Clicking a star to select it, and clicking empty space or pressing
+  // Escape to deselect.
   selectByClick: true,
   // Flying to a star when it is clicked; off, it is selected where it is.
   flyToSelection: true,

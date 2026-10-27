@@ -195,7 +195,8 @@ It accepts `{ type: 'startLoading', url, batchSize, includeNames }` and
 ## Controls
 
 Drag to rotate, right-drag to pan, and scroll to zoom towards the pointer.
-Click a star to select it and fly to it.
+Click a star to select it and fly to it. Click empty space, or press Escape
+while the map has focus, to deselect.
 
 Arrow keys glide the view level with the galactic plane while held: up and
 down move away from and towards you, left and right slide sideways. Speed is
@@ -232,7 +233,7 @@ galaxyMap.dispatch({ type: 'setUserInterface', rotate: true, pan: true, zoom: tr
 | `zoom` | on | The mouse wheel or pinching |
 | `keyboardMovement` | on | Arrow keys, Page Up and Page Down |
 | `hover` | on | Ring and name on the star under the pointer |
-| `selectByClick` | on | Clicking a star to select it |
+| `selectByClick` | on | Clicking a star to select it, and empty space or Escape to deselect |
 | `flyToSelection` | on | Flying to a clicked star (off: selected where it is) |
 | `grid` | on | The grid |
 | `gridLabel` | on | The grid's coordinate label |
