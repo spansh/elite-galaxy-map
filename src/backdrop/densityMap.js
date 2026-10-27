@@ -15,22 +15,22 @@ import { CanvasTexture, LinearMipmapLinearFilter, SRGBColorSpace } from 'three';
 export const GALAXY_DENSITY_MAP_AREA = Object.freeze({ centreX: 25, centreZ: 25900, widthInLightYears: 104000 });
 
 export async function loadDensityMap(imageUrl, area = GALAXY_DENSITY_MAP_AREA) {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-        throw new Error(`Could not load density map ${imageUrl}: ${response.status} ${response.statusText}`);
-    }
-    const imageBitmap = await createImageBitmap(await response.blob());
-    // Drawn onto a canvas, which three.js uploads the right way up.
-    const canvas = document.createElement('canvas');
-    canvas.width = imageBitmap.width;
-    canvas.height = imageBitmap.height;
-    canvas.getContext('2d').drawImage(imageBitmap, 0, 0);
-    imageBitmap.close();
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Could not load density map ${imageUrl}: ${response.status} ${response.statusText}`);
+  }
+  const imageBitmap = await createImageBitmap(await response.blob());
+  // Drawn onto a canvas, which three.js uploads the right way up.
+  const canvas = document.createElement('canvas');
+  canvas.width = imageBitmap.width;
+  canvas.height = imageBitmap.height;
+  canvas.getContext('2d').drawImage(imageBitmap, 0, 0);
+  imageBitmap.close();
 
-    const texture = new CanvasTexture(canvas);
-    texture.colorSpace = SRGBColorSpace;
-    texture.minFilter = LinearMipmapLinearFilter;
-    texture.generateMipmaps = true;
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  texture.minFilter = LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
 
-    return { width: canvas.width, height: canvas.height, texture, area };
+  return { width: canvas.width, height: canvas.height, texture, area };
 }

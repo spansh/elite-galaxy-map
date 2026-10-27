@@ -39,7 +39,7 @@ const RESHUFFLE_MINIMUM_WAITING = 1024;
 // Whether a cell has enough stars waiting to be shuffled in to be worth
 // shuffling now, while data is still arriving.
 export function hasGrownEnoughToShuffle(cell) {
-    return cell.unshuffledCount >= Math.max(RESHUFFLE_MINIMUM_WAITING, cell.shuffledCount * RESHUFFLE_SHARE);
+  return cell.unshuffledCount >= Math.max(RESHUFFLE_MINIMUM_WAITING, cell.shuffledCount * RESHUFFLE_SHARE);
 }
 
 // The cells with stars waiting to be shuffled in, most in need first: those
@@ -48,10 +48,10 @@ export function hasGrownEnoughToShuffle(cell) {
 // would leave the ones at the end waiting for minutes while a large dump
 // loads; this way every cell gets its turn, the ones that show first.
 export function orderCellsForShuffling(cells) {
-    const waitingShare = cell => cell.unshuffledCount / Math.max(cell.shuffledCount, 1);
-    return cells
-        .filter(cell => cell.unshuffledCount > 0)
-        .sort((first, second) => Number(second.wasOnScreen) - Number(first.wasOnScreen) || waitingShare(second) - waitingShare(first));
+  const waitingShare = cell => cell.unshuffledCount / Math.max(cell.shuffledCount, 1);
+  return cells
+    .filter(cell => cell.unshuffledCount > 0)
+    .sort((first, second) => Number(second.wasOnScreen) - Number(first.wasOnScreen) || waitingShare(second) - waitingShare(first));
 }
 
 // Stars at the end of a cell's sample fade out gradually rather than
@@ -65,16 +65,16 @@ export const FADE_LENGTH = 0.5;
 // drawn (counting the fading stars at half). Returns { fadeStart, fadeEnd,
 // brightnessCompensation }; draw stars up to fadeEnd.
 export function fadeForSample(drawCount, systemCount, shuffledCount) {
-    if (drawCount === 0) {
-        return { fadeStart: 0, fadeEnd: 0, brightnessCompensation: 1 };
-    }
-    if (drawCount >= systemCount) {
-        return { fadeStart: systemCount, fadeEnd: systemCount, brightnessCompensation: 1 };
-    }
-    const fadeStart = drawCount;
-    const fadeEnd = Math.min(Math.ceil(drawCount * (1 + FADE_LENGTH)), shuffledCount, systemCount);
-    const starsCounted = fadeStart + (fadeEnd - fadeStart) / 2;
-    return { fadeStart, fadeEnd, brightnessCompensation: shuffledCount / starsCounted };
+  if (drawCount === 0) {
+    return { fadeStart: 0, fadeEnd: 0, brightnessCompensation: 1 };
+  }
+  if (drawCount >= systemCount) {
+    return { fadeStart: systemCount, fadeEnd: systemCount, brightnessCompensation: 1 };
+  }
+  const fadeStart = drawCount;
+  const fadeEnd = Math.min(Math.ceil(drawCount * (1 + FADE_LENGTH)), shuffledCount, systemCount);
+  const starsCounted = fadeStart + (fadeEnd - fadeStart) / 2;
+  return { fadeStart, fadeEnd, brightnessCompensation: shuffledCount / starsCounted };
 }
 
 // cells: one entry per cell on screen, describing the part of it that can
@@ -97,61 +97,61 @@ export function fadeForSample(drawCount, systemCount, shuffledCount) {
 // Returns, for each cell in the same order, { drawCount, brightnessCompensation },
 // before any fade (see fadeForSample).
 export function chooseStarsToDraw(cells, { maximumStarsPerPixel, starBudget }) {
-    const visibleCountOf = cell => cell.visibleCount ?? cell.systemCount;
-    // A cell can only be cut down if it has been shuffled: an unshuffled
-    // cell's first stars would all come from one part of it.
-    const canBeSampled = cell => !cell.cameraIsInside
-        && cell.shuffledCount >= MINIMUM_STARS_PER_CELL
-        && cell.shuffledCount >= cell.systemCount * MINIMUM_SHUFFLED_SHARE
-        && visibleCountOf(cell) > 0;
+  const visibleCountOf = cell => cell.visibleCount ?? cell.systemCount;
+  // A cell can only be cut down if it has been shuffled: an unshuffled
+  // cell's first stars would all come from one part of it.
+  const canBeSampled = cell => !cell.cameraIsInside
+    && cell.shuffledCount >= MINIMUM_STARS_PER_CELL
+    && cell.shuffledCount >= cell.systemCount * MINIMUM_SHUFFLED_SHARE
+    && visibleCountOf(cell) > 0;
 
-    // First, how many visible stars the density on screen calls for.
-    const wantedVisibleCounts = cells.map(cell => {
-        const visibleCount = visibleCountOf(cell);
-        if (!canBeSampled(cell)) {
-            return visibleCount;
-        }
-        const starsTheScreenCanShow = cell.widthOnScreen * cell.widthOnScreen * maximumStarsPerPixel;
-        return Math.min(visibleCount, Math.max(MINIMUM_STARS_PER_CELL, Math.ceil(starsTheScreenCanShow)));
-    });
+  // First, how many visible stars the density on screen calls for.
+  const wantedVisibleCounts = cells.map(cell => {
+    const visibleCount = visibleCountOf(cell);
+    if (!canBeSampled(cell)) {
+      return visibleCount;
+    }
+    const starsTheScreenCanShow = cell.widthOnScreen * cell.widthOnScreen * maximumStarsPerPixel;
+    return Math.min(visibleCount, Math.max(MINIMUM_STARS_PER_CELL, Math.ceil(starsTheScreenCanShow)));
+  });
 
-    // Then, if that is still over budget, cut every cell that can be cut by
-    // the same proportion.
-    let countThatCannotBeCut = 0;
-    let countThatCanBeCut = 0;
-    cells.forEach((cell, index) => {
-        if (canBeSampled(cell)) {
-            countThatCanBeCut += wantedVisibleCounts[index];
-        } else {
-            countThatCannotBeCut += wantedVisibleCounts[index];
-        }
-    });
-    const budgetForCuttableCells = Math.max(starBudget - countThatCannotBeCut, 0);
-    const budgetProportion = countThatCanBeCut > budgetForCuttableCells ? budgetForCuttableCells / countThatCanBeCut : 1;
+  // Then, if that is still over budget, cut every cell that can be cut by
+  // the same proportion.
+  let countThatCannotBeCut = 0;
+  let countThatCanBeCut = 0;
+  cells.forEach((cell, index) => {
+    if (canBeSampled(cell)) {
+      countThatCanBeCut += wantedVisibleCounts[index];
+    } else {
+      countThatCannotBeCut += wantedVisibleCounts[index];
+    }
+  });
+  const budgetForCuttableCells = Math.max(starBudget - countThatCannotBeCut, 0);
+  const budgetProportion = countThatCanBeCut > budgetForCuttableCells ? budgetForCuttableCells / countThatCanBeCut : 1;
 
-    return cells.map((cell, index) => {
-        const visibleCount = visibleCountOf(cell);
-        if (visibleCount === 0) {
-            return { drawCount: 0, brightnessCompensation: 1 };
-        }
-        if (!canBeSampled(cell)) {
-            return { drawCount: cell.systemCount, brightnessCompensation: 1 };
-        }
-        // Visible stars are spread evenly through the random order, so to
-        // draw N of them, draw N / (visible share) stars. The sample stands
-        // for the shuffled stars, so it is a share of those that's wanted.
-        const visibleShare = visibleCount / cell.systemCount;
-        const shuffledShare = cell.shuffledCount / cell.systemCount;
-        const drawCount = Math.max(
-            MINIMUM_STARS_PER_CELL,
-            Math.ceil(Math.floor(wantedVisibleCounts[index] * budgetProportion * shuffledShare) / visibleShare),
-            Math.ceil(cell.shuffledCount / MAXIMUM_BRIGHTNESS_COMPENSATION),
-        );
-        // Only the shuffled stars make an even sample; if more are wanted
-        // than that, draw them all.
-        if (drawCount >= cell.shuffledCount) {
-            return { drawCount: cell.systemCount, brightnessCompensation: 1 };
-        }
-        return { drawCount, brightnessCompensation: cell.shuffledCount / drawCount };
-    });
+  return cells.map((cell, index) => {
+    const visibleCount = visibleCountOf(cell);
+    if (visibleCount === 0) {
+      return { drawCount: 0, brightnessCompensation: 1 };
+    }
+    if (!canBeSampled(cell)) {
+      return { drawCount: cell.systemCount, brightnessCompensation: 1 };
+    }
+    // Visible stars are spread evenly through the random order, so to
+    // draw N of them, draw N / (visible share) stars. The sample stands
+    // for the shuffled stars, so it is a share of those that's wanted.
+    const visibleShare = visibleCount / cell.systemCount;
+    const shuffledShare = cell.shuffledCount / cell.systemCount;
+    const drawCount = Math.max(
+      MINIMUM_STARS_PER_CELL,
+      Math.ceil(Math.floor(wantedVisibleCounts[index] * budgetProportion * shuffledShare) / visibleShare),
+      Math.ceil(cell.shuffledCount / MAXIMUM_BRIGHTNESS_COMPENSATION),
+    );
+    // Only the shuffled stars make an even sample; if more are wanted
+    // than that, draw them all.
+    if (drawCount >= cell.shuffledCount) {
+      return { drawCount: cell.systemCount, brightnessCompensation: 1 };
+    }
+    return { drawCount, brightnessCompensation: cell.shuffledCount / drawCount };
+  });
 }

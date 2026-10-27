@@ -20,14 +20,14 @@ export const DETAIL_EASE_IN_MILLISECONDS = 400;
 // previous and current: { position, quaternion, aspect, fov } of the camera,
 // with three.js Vector3 and Quaternion; orbitTarget is a Vector3.
 export function cameraMovedVisibly(previous, current, orbitTarget) {
-    if (previous === undefined) {
-        return false;
-    }
-    const distanceFromTarget = Math.max(current.position.distanceTo(orbitTarget), 1);
-    const movedShare = current.position.distanceTo(previous.position) / distanceFromTarget;
-    const turnedRadians = 2 * Math.acos(Math.min(Math.abs(current.quaternion.dot(previous.quaternion)), 1));
-    const lensChanged = current.aspect !== previous.aspect || current.fov !== previous.fov;
-    return movedShare > VISIBLE_MOVEMENT_SHARE || turnedRadians > VISIBLE_TURN_RADIANS || lensChanged;
+  if (previous === undefined) {
+    return false;
+  }
+  const distanceFromTarget = Math.max(current.position.distanceTo(orbitTarget), 1);
+  const movedShare = current.position.distanceTo(previous.position) / distanceFromTarget;
+  const turnedRadians = 2 * Math.acos(Math.min(Math.abs(current.quaternion.dot(previous.quaternion)), 1));
+  const lensChanged = current.aspect !== previous.aspect || current.fov !== previous.fov;
+  return movedShare > VISIBLE_MOVEMENT_SHARE || turnedRadians > VISIBLE_TURN_RADIANS || lensChanged;
 }
 
 // Returns { isMoving, resolutionScale, starBudget, isEasingIn } for a frame
@@ -36,15 +36,15 @@ export function cameraMovedVisibly(previous, current, orbitTarget) {
 // starBudgetWhileMoving and reducedResolutionScale (the resolution scale to
 // use while moving).
 export function chooseRenderQuality(now, timeOfLastMovement, settings) {
-    const stillFor = timeOfLastMovement === undefined ? Infinity : now - timeOfLastMovement - STILL_DELAY_MILLISECONDS;
-    const isMoving = stillFor < 0;
-    const detailProgress = isMoving ? 0 : Math.min(stillFor / DETAIL_EASE_IN_MILLISECONDS, 1);
-    // Eased, so the stars start and finish filling in gently.
-    const easedDetail = detailProgress * detailProgress * (3 - 2 * detailProgress);
-    return {
-        isMoving,
-        resolutionScale: isMoving ? settings.reducedResolutionScale : 1,
-        starBudget: settings.starBudgetWhileMoving + (settings.starBudget - settings.starBudgetWhileMoving) * easedDetail,
-        isEasingIn: !isMoving && detailProgress < 1,
-    };
+  const stillFor = timeOfLastMovement === undefined ? Infinity : now - timeOfLastMovement - STILL_DELAY_MILLISECONDS;
+  const isMoving = stillFor < 0;
+  const detailProgress = isMoving ? 0 : Math.min(stillFor / DETAIL_EASE_IN_MILLISECONDS, 1);
+  // Eased, so the stars start and finish filling in gently.
+  const easedDetail = detailProgress * detailProgress * (3 - 2 * detailProgress);
+  return {
+    isMoving,
+    resolutionScale: isMoving ? settings.reducedResolutionScale : 1,
+    starBudget: settings.starBudgetWhileMoving + (settings.starBudget - settings.starBudgetWhileMoving) * easedDetail,
+    isEasingIn: !isMoving && detailProgress < 1,
+  };
 }

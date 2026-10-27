@@ -17,15 +17,20 @@
 // and tourist plotters), or result itself being the list (road to riches).
 // Coordinates may be x, y, z on the jump or in a `coords` object.
 //
+// A trade route's result is a list of hops, each with a `source` and a
+// `destination` station. Its stops are the first hop's source, then each
+// hop's destination, named "System - Station", with `system`, `station`,
+// `systemId64` and `marketId` fields, and the market id as the key.
+//
 // The start and end are always named; with showNames: 'ifRoom' every other
 // stop is named where its label fits, and otherwise shows its name on hover.
 // Neutron boosts and refuel stops are marked out in ways that don't rely on
 // colour alone (see routeStopMarker).
 
 export const ROUTE_STOP_COLOURS = Object.freeze({
-    neutronBoost: '#7cc4ff',
-    refuel: '#7be08a',
-    neutronBoostAndRefuel: '#d49cff',
+  neutronBoost: '#7cc4ff',
+  refuel: '#7be08a',
+  neutronBoostAndRefuel: '#d49cff',
 });
 
 // How one jump of a Spansh route is marked, as fields to add to its system:
@@ -43,58 +48,58 @@ export const ROUTE_STOP_COLOURS = Object.freeze({
 //
 //     const system = { name, coordinates, ...routeStopMarker(jump) };
 export function routeStopMarker(jump) {
-    const isNeutronBoost = jump.has_neutron === true || jump.neutron_star === true;
-    const mustRefuel = jump.must_refuel === true;
-    if (isNeutronBoost && mustRefuel) {
-        return { colour: ROUTE_STOP_COLOURS.neutronBoostAndRefuel, shape: 'diamond', centreDot: true };
-    }
-    if (isNeutronBoost) {
-        return { colour: ROUTE_STOP_COLOURS.neutronBoost, shape: 'diamond' };
-    }
-    if (mustRefuel) {
-        return { colour: ROUTE_STOP_COLOURS.refuel, centreDot: true };
-    }
-    return {};
+  const isNeutronBoost = jump.has_neutron === true || jump.neutron_star === true;
+  const mustRefuel = jump.must_refuel === true;
+  if (isNeutronBoost && mustRefuel) {
+    return { colour: ROUTE_STOP_COLOURS.neutronBoostAndRefuel, shape: 'diamond', centreDot: true };
+  }
+  if (isNeutronBoost) {
+    return { colour: ROUTE_STOP_COLOURS.neutronBoost, shape: 'diamond' };
+  }
+  if (mustRefuel) {
+    return { colour: ROUTE_STOP_COLOURS.refuel, centreDot: true };
+  }
+  return {};
 }
 
 function findListOfJumps(routeResult) {
-    if (Array.isArray(routeResult)) {
-        return routeResult;
+  if (Array.isArray(routeResult)) {
+    return routeResult;
+  }
+  const result = routeResult?.result ?? routeResult;
+  if (Array.isArray(result)) {
+    return result;
+  }
+  for (const listName of ['jumps', 'system_jumps']) {
+    if (Array.isArray(result?.[listName])) {
+      return result[listName];
     }
-    const result = routeResult?.result ?? routeResult;
-    if (Array.isArray(result)) {
-        return result;
-    }
-    for (const listName of ['jumps', 'system_jumps']) {
-        if (Array.isArray(result?.[listName])) {
-            return result[listName];
-        }
-    }
-    throw new Error('Could not find the list of jumps in this route (looked for result.jumps, result.system_jumps and a plain list)');
+  }
+  throw new Error('Could not find the list of jumps in this route (looked for result.jumps, result.system_jumps and a plain list)');
 }
 
 function coordinatesOfJump(jump) {
-    const source = jump.coords ?? jump;
-    const coordinates = { x: Number(source.x), y: Number(source.y), z: Number(source.z) };
-    const hasCoordinates = [coordinates.x, coordinates.y, coordinates.z].every(Number.isFinite);
-    return hasCoordinates ? coordinates : null;
+  const source = jump.coords ?? jump;
+  const coordinates = { x: Number(source.x), y: Number(source.y), z: Number(source.z) };
+  const hasCoordinates = [coordinates.x, coordinates.y, coordinates.z].every(Number.isFinite);
+  return hasCoordinates ? coordinates : null;
 }
 
 // The kinds of stop routeStopMarker tells apart, in the order a legend lists
 // them, each with an example jump.
 const ROUTE_STOP_KINDS = Object.freeze([
-    { kind: 'neutronBoost', exampleJump: { has_neutron: true } },
-    { kind: 'refuel', exampleJump: { must_refuel: true } },
-    { kind: 'neutronBoostAndRefuel', exampleJump: { has_neutron: true, must_refuel: true } },
-    { kind: 'other', exampleJump: {} },
+  { kind: 'neutronBoost', exampleJump: { has_neutron: true } },
+  { kind: 'refuel', exampleJump: { must_refuel: true } },
+  { kind: 'neutronBoostAndRefuel', exampleJump: { has_neutron: true, must_refuel: true } },
+  { kind: 'other', exampleJump: {} },
 ]);
 
 // The legend's labels for each kind of stop, unless others are given.
 export const ROUTE_STOP_LABELS = Object.freeze({
-    neutronBoost: 'Neutron boost',
-    refuel: 'Refuel stop',
-    neutronBoostAndRefuel: 'Neutron boost and refuel',
-    other: 'Other stop',
+  neutronBoost: 'Neutron boost',
+  refuel: 'Refuel stop',
+  neutronBoostAndRefuel: 'Neutron boost and refuel',
+  other: 'Other stop',
 });
 
 // Entries for the map's legend (the legend option or setLegend command)
@@ -111,41 +116,76 @@ export const ROUTE_STOP_LABELS = Object.freeze({
 //
 //     routeStopLegend(systems, { labels: { neutronBoost: 'Boost de neutrons', refuel: 'Ravitaillement' } });
 export function routeStopLegend(systems, { labels = {} } = {}) {
-    const unknownKinds = Object.keys(labels).filter(kind => !(kind in ROUTE_STOP_LABELS));
-    if (unknownKinds.length > 0) {
-        throw new Error(`routeStopLegend has labels for unknown kinds of stop: ${unknownKinds.join(', ')}; known kinds are ${Object.keys(ROUTE_STOP_LABELS).join(', ')}`);
+  const unknownKinds = Object.keys(labels).filter(kind => !(kind in ROUTE_STOP_LABELS));
+  if (unknownKinds.length > 0) {
+    throw new Error(`routeStopLegend has labels for unknown kinds of stop: ${unknownKinds.join(', ')}; known kinds are ${Object.keys(ROUTE_STOP_LABELS).join(', ')}`);
+  }
+  const entries = [];
+  for (const { kind, exampleJump } of ROUTE_STOP_KINDS) {
+    const marker = routeStopMarker(exampleJump);
+    const count = systems.filter(system => system.shape === marker.shape && system.centreDot === marker.centreDot).length;
+    if (count > 0) {
+      entries.push({ label: labels[kind] ?? ROUTE_STOP_LABELS[kind], ...marker, count });
     }
-    const entries = [];
-    for (const { kind, exampleJump } of ROUTE_STOP_KINDS) {
-        const marker = routeStopMarker(exampleJump);
-        const count = systems.filter(system => system.shape === marker.shape && system.centreDot === marker.centreDot).length;
-        if (count > 0) {
-            entries.push({ label: labels[kind] ?? ROUTE_STOP_LABELS[kind], ...marker, count });
-        }
+  }
+  const hasOnlyOrdinaryStops = entries.length === 1 && entries[0].shape === undefined && entries[0].centreDot === undefined;
+  return hasOnlyOrdinaryStops ? [] : entries;
+}
+
+function isTradeRoute(jumps) {
+  return jumps.some(hop => hop?.source !== undefined || hop?.destination !== undefined);
+}
+
+function tradeRouteSystems(hops) {
+  hops.forEach((hop, hopIndex) => {
+    for (const end of ['source', 'destination']) {
+      if (typeof hop?.[end] !== 'object' || hop[end] === null) {
+        throw new Error(`Trade hop ${hopIndex} has no ${end} station`);
+      }
     }
-    const hasOnlyOrdinaryStops = entries.length === 1 && entries[0].shape === undefined && entries[0].centreDot === undefined;
-    return hasOnlyOrdinaryStops ? [] : entries;
+  });
+  const stations = [hops[0].source, ...hops.map(hop => hop.destination)];
+  return stations.map((station, stopIndex) => {
+    const name = station.station === undefined ? station.system : `${station.system} - ${station.station}`;
+    const coordinates = coordinatesOfJump(station);
+    if (coordinates === null) {
+      throw new Error(`Stop ${stopIndex} (${name}) has no coordinates`);
+    }
+    return {
+      name,
+      system: station.system,
+      station: station.station,
+      coordinates,
+      key: station.market_id,
+      systemId64: station.system_id64,
+      marketId: station.market_id,
+    };
+  });
+}
+
+function jumpRouteSystems(jumps) {
+  return jumps.map((jump, jumpIndex) => {
+    const coordinates = coordinatesOfJump(jump);
+    if (coordinates === null) {
+      throw new Error(`Jump ${jumpIndex} (${jump.name ?? jump.system ?? 'unnamed'}) has no coordinates`);
+    }
+    const system = { name: jump.name ?? jump.system, coordinates, ...routeStopMarker(jump) };
+    if (jump.id64 !== undefined) {
+      system.key = jump.id64;
+    }
+    return system;
+  });
 }
 
 export function routeSystemsFromSpanshResult(routeResult) {
-    if (routeResult?.status !== undefined && routeResult.status !== 'ok') {
-        throw new Error(`The route did not finish: status "${routeResult.status}"${routeResult.error ? `, ${routeResult.error}` : ''}`);
-    }
-    const jumps = findListOfJumps(routeResult);
-    const systems = jumps.map((jump, jumpIndex) => {
-        const coordinates = coordinatesOfJump(jump);
-        if (coordinates === null) {
-            throw new Error(`Jump ${jumpIndex} (${jump.name ?? jump.system ?? 'unnamed'}) has no coordinates`);
-        }
-        const system = { name: jump.name ?? jump.system, coordinates, ...routeStopMarker(jump) };
-        if (jump.id64 !== undefined) {
-            system.key = jump.id64;
-        }
-        return system;
-    });
-    if (systems.length > 0) {
-        systems[0].showName = true;
-        systems[systems.length - 1].showName = true;
-    }
-    return systems;
+  if (routeResult?.status !== undefined && routeResult.status !== 'ok') {
+    throw new Error(`The route did not finish: status "${routeResult.status}"${routeResult.error ? `, ${routeResult.error}` : ''}`);
+  }
+  const jumps = findListOfJumps(routeResult);
+  const systems = isTradeRoute(jumps) ? tradeRouteSystems(jumps) : jumpRouteSystems(jumps);
+  if (systems.length > 0) {
+    systems[0].showName = true;
+    systems[systems.length - 1].showName = true;
+  }
+  return systems;
 }

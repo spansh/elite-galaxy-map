@@ -54,13 +54,13 @@ server (the demo's server would serve the source instead):
 
 ```html
 <script type="importmap">
-    {
-        "imports": {
-            "three": "/js/three.module.js",
-            "three/addons/": "/js/examples/jsm/",
-            "elite-galaxy-map": "/js/galaxy-map.standalone.js"
-        }
+  {
+    "imports": {
+      "three": "/js/three.module.js",
+      "three/addons/": "/js/examples/jsm/",
+      "elite-galaxy-map": "/js/galaxy-map.standalone.js"
     }
+  }
 </script>
 ```
 
@@ -87,6 +87,7 @@ transferable so it isn't copied between threads.
 | `highlightSystems` | `systems`, `asRoute`, `showNames`, `frame`, `view` | Shows systems with a ring and their name, replacing earlier highlights. See below. |
 | `clearHighlights` | | |
 | `setLegend` | `entries` | Shows a key to the highlight markers. See [Legend](#legend). |
+| `setText` | `text`, `locale` | Replaces the map's own text. See [Text and translations](#text-and-translations). |
 | `setGridHeight` | `y` | Moves the grid. Selecting a system also does this. |
 | `setGridVisibility` | `visible` | The same as `setUserInterface` with `grid`. |
 | `setUserInterface` | any of the settings below | Switches parts of the map's interface on or off. See [User interface](#user-interface). |
@@ -114,6 +115,7 @@ positions throw an error saying what's wrong.
 | `framerender` | How the frame just drawn went, the same as `galaxyMap.getFrameStatistics()` |
 | `loadrequest` | `{ url }`, when the panel's Load button is pressed (see [User interface](#user-interface)) |
 | `stoprequest` | none, when the panel's Stop or Clear stars button is pressed |
+| `textchange` | `{ locale }`, after `setText` |
 
 A `system` from a loaded layer is `{ layer, name, key, coordinates: { x, y, z } }`.
 A highlighted system is returned as it was given to `highlightSystems`
@@ -169,6 +171,8 @@ It accepts `{ type: 'startLoading', url, batchSize, includeNames }` and
 | `highlightColour` | `'#ffd27a'` | Rings, names and route lines of highlights |
 | `legend` | `[]` | A key to the highlight markers, as for `setLegend`. See [Legend](#legend). |
 | `legendCorner` | `'topRight'` | Where the legend sits: `'topRight'`, `'topLeft'`, `'bottomRight'` or `'bottomLeft'` |
+| `text` | `{}` | The map's own text, by key. See [Text and translations](#text-and-translations). |
+| `locale` | `null` | Language for plurals and numbers, such as `'fr'`; `null` for the browser's |
 | `cellSizeInLightYears` | `4000` | Size of the spatial cells stars are grouped into |
 | `exposure` | `1.2` | How hard bright areas are compressed |
 | `backgroundColour` | `'#03060a'` | Colour of empty space |
@@ -212,8 +216,8 @@ send `setUserInterface` later. Settings left out keep their current value.
 ```js
 // A fixed view for embedding: no panel, no moving the camera.
 const galaxyMap = new GalaxyMap(element, {
-    initialView: 'topDown',
-    userInterface: { panel: false, rotate: false, pan: false, zoom: false, keyboardMovement: false },
+  initialView: 'topDown',
+  userInterface: { panel: false, rotate: false, pan: false, zoom: false, keyboardMovement: false },
 });
 
 // Later, let people look around again.
@@ -255,17 +259,55 @@ the example Spansh loader. The panel can also be folded away to its title,
 and `galaxyMap.controlPanel.showRoute(routeResult)` shows a Spansh route as
 the file picker does.
 
+### Text and translations
+
+Every piece of text the map shows can be replaced: the control panel, the
+loading bar, the legend's label for screen readers, the route stop names the
+panel's route picker puts in the legend, and the name shown for a system
+without one. Each is an [ICU message](https://formatjs.github.io/docs/core-concepts/icu-syntax/),
+the format ember-intl and most translation tools use, formatted with
+[intl-messageformat](https://www.npmjs.com/package/intl-messageformat).
+Give only the keys you want to change; the rest stay in English.
+`DEFAULT_TEXT`, exported by the map, lists every key with its English.
+
+```js
+const galaxyMap = new GalaxyMap(element, {
+  locale: 'fr',
+  text: {
+    load: 'Charger',
+    routeSummary: '{start} → {end}, {jumpCount, plural, one {# saut} other {# sauts}}',
+    tradeRouteSummary: '{start} → {end}, {hopCount, plural, one {# étape} other {# étapes}}',
+  },
+});
+
+// Later, in another language. Keys left out go back to English.
+galaxyMap.dispatch({ type: 'setText', locale: 'de', text: { load: 'Laden' } });
+```
+
+With ember-intl, the page's own translations can be passed in, for example
+`{ load: this.intl.lookup('galaxy_map.load') }`. `locale` decides plural
+forms and how numbers are written; left as `null`, it is the browser's
+language. Everything on screen is shown again in the new text after
+`setText`, and the map raises `textchange`. An unknown key, a message that
+isn't valid ICU or a locale that isn't a language tag throws an error naming
+it.
+
+Some text is not the map's own, so it doesn't change: details of an error
+(why a dump or route couldn't be read) come from the browser or the route
+reader, layer names come from the page's `defineLayer` commands, region
+names are the game's, and a page's legend entries are its own.
+
 ## Highlighted systems and routes
 
 To open the map looking straight down at some systems, each already named:
 
 ```js
 const galaxyMap = new GalaxyMap(element, {
-    initialView: 'topDown',
-    highlightedSystems: [
-        { name: 'Sol', coordinates: { x: 0, y: 0, z: 0 } },
-        { name: 'Colonia', coordinates: { x: -9530.5, y: -910.28125, z: 19808.125 } },
-    ],
+  initialView: 'topDown',
+  highlightedSystems: [
+    { name: 'Sol', coordinates: { x: 0, y: 0, z: 0 } },
+    { name: 'Colonia', coordinates: { x: -9530.5, y: -910.28125, z: 19808.125 } },
+  ],
 });
 ```
 
@@ -274,6 +316,34 @@ Add `highlightsAreRoute: true` and they are joined in order by a line, as a
 route, with an arrowhead half way along each leg pointing the way the route
 goes. Arrows stay the same size on screen and are left off legs too short on
 screen to fit one.
+
+A route may come back to where it has been, or stop more than once in one
+star system (two stations, say); pass every stop, in order. Systems at the
+same coordinates share one ring, and its name lists each of them. On a route,
+such a place numbers its stops, counting the first system as 1, so the order
+can be followed where the route crosses itself:
+
+```
+3. Cemiess - Meech Dock
+5. Cemiess - Titius Station
+```
+
+A stop visited twice reads `1, 7. Fuelum - Wollheim Vision`. Stops that give
+the star system's name as `system` and a `station` are listed under the
+system when it has more than one stop:
+
+```
+Cemiess
+  3. Meech Dock
+  5. Titius Station
+```
+
+Systems count as the same place within 0.1 light years. Clicking the shared
+ring picks the first system named on it. The ring takes the shape of the
+first system with one, and that system's colour, and a centre dot if any
+system there has one. A system with `showName: false` is left out of the name
+unless none there is named. On a leg the route also travels the other way, each arrow moves along
+towards its own leg's end, so the two don't sit on top of each other.
 
 Naming is set by `showNames` (or the `showHighlightNames` option), and a
 system's own `showName` overrides it:
@@ -315,11 +385,11 @@ if given, a count:
 
 ```js
 galaxyMap.dispatch({
-    type: 'setLegend',
-    entries: [
-        { label: 'Search result', count: 48 },
-        { label: 'Reference system', colour: '#6ea8fe', shape: 'square' },
-    ],
+  type: 'setLegend',
+  entries: [
+    { label: 'Search result', count: 48 },
+    { label: 'Reference system', colour: '#6ea8fe', shape: 'square' },
+  ],
 });
 ```
 
@@ -351,6 +421,11 @@ every other stop shows its name when hovered. Stops are marked so they can
 be told apart without relying on colour: the shape shows a neutron boost, and
 a centre dot a refuel stop.
 
+A trade route (a list of hops, each with a `source` and `destination`
+station) gives the first hop's source and then each hop's destination, named
+`System - Station`. Each stop also has `system`, `station`, `systemId64` and
+`marketId`, and its `key` is the market id. Its stops are not marked out.
+
 | Stop | Marker | Colour |
 |---|---|---|
 | Neutron boost | Diamond | Blue |
@@ -370,7 +445,7 @@ stop, and any left out keep their English label (`ROUTE_STOP_LABELS`):
 
 ```js
 routeStopLegend(systems, {
-    labels: { neutronBoost: '…', refuel: '…', neutronBoostAndRefuel: '…', other: '…' },
+  labels: { neutronBoost: '…', refuel: '…', neutronBoostAndRefuel: '…', other: '…' },
 });
 ```
 

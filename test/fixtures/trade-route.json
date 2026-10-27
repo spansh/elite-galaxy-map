@@ -1,0 +1,253 @@
+{
+  "created_at": "2026-10-27T03:11:20",
+  "job": "1559F86A-D1B4-11F1-8B0D-F4D8F918FA4D",
+  "parameters": {
+    "max_cargo": "7",
+    "max_hop_distance": "50",
+    "max_hops": "5",
+    "max_price_age": "138178",
+    "max_system_distance": "10000000",
+    "starting_capital": "1000",
+    "starting_market_id": 3223901184
+  },
+  "result": [
+    {
+      "commodities": [
+        {
+          "amount": 7,
+          "destination_commodity": {
+            "buy_price": 0,
+            "demand": 3684,
+            "sell_price": 658,
+            "supply": 0
+          },
+          "name": "Food Cartridges",
+          "profit": 552,
+          "source_commodity": {
+            "buy_price": 106,
+            "demand": 1,
+            "sell_price": 68,
+            "supply": 867534
+          },
+          "total_profit": 3864
+        }
+      ],
+      "cumulative_profit": 3864,
+      "destination": {
+        "distance_to_arrival": 60,
+        "market_id": 3223804160,
+        "market_updated_at": 1793059997,
+        "station": "Andoyer Station",
+        "system": "Gongalungul",
+        "system_id64": 7269097678257,
+        "x": 76.4375,
+        "y": -85.4375,
+        "z": 27.3125
+      },
+      "distance": 46.6696020747178,
+      "source": {
+        "distance_to_arrival": 43,
+        "market_id": 3223901184,
+        "market_updated_at": 1792963853,
+        "station": "Wollheim Vision",
+        "system": "Fuelum",
+        "system_id64": 5031721931482,
+        "x": 52,
+        "y": -52.65625,
+        "z": 49.8125
+      },
+      "total_profit": 3864
+    },
+    {
+      "commodities": [
+        {
+          "amount": 7,
+          "destination_commodity": {
+            "buy_price": 0,
+            "demand": 562015,
+            "sell_price": 12811,
+            "supply": 0
+          },
+          "name": "Bauxite",
+          "profit": 12153,
+          "source_commodity": {
+            "buy_price": 658,
+            "demand": 1,
+            "sell_price": 627,
+            "supply": 55982
+          },
+          "total_profit": 85071
+        }
+      ],
+      "cumulative_profit": 88935,
+      "destination": {
+        "distance_to_arrival": 83,
+        "market_id": 3222823168,
+        "market_updated_at": 1793061310,
+        "station": "Meech Dock",
+        "system": "Cemiess",
+        "system_id64": 1522322606443,
+        "x": 66.0625,
+        "y": -105.34375,
+        "z": 27.09375
+      },
+      "distance": 22.4487698020404,
+      "source": {
+        "distance_to_arrival": 60,
+        "market_id": 3223804160,
+        "market_updated_at": 1793059997,
+        "station": "Andoyer Station",
+        "system": "Gongalungul",
+        "system_id64": 7269097678257,
+        "x": 76.4375,
+        "y": -85.4375,
+        "z": 27.3125
+      },
+      "total_profit": 85071
+    },
+    {
+      "commodities": [
+        {
+          "amount": 7,
+          "destination_commodity": {
+            "buy_price": 0,
+            "demand": 966,
+            "sell_price": 56005,
+            "supply": 0
+          },
+          "name": "Gold",
+          "profit": 50980,
+          "source_commodity": {
+            "buy_price": 5025,
+            "demand": 1,
+            "sell_price": 4919,
+            "supply": 13
+          },
+          "total_profit": 356860
+        }
+      ],
+      "cumulative_profit": 445795,
+      "destination": {
+        "distance_to_arrival": 261196,
+        "market_id": 4371300611,
+        "market_updated_at": 1792950424,
+        "station": "Hynek Enterprise",
+        "system": "ICZ IW-W c1-17",
+        "system_id64": 4756978176730,
+        "x": 109.25,
+        "y": -118.5625,
+        "z": 34.9375
+      },
+      "distance": 45.8412469493905,
+      "source": {
+        "distance_to_arrival": 83,
+        "market_id": 3222823168,
+        "market_updated_at": 1793061310,
+        "station": "Meech Dock",
+        "system": "Cemiess",
+        "system_id64": 1522322606443,
+        "x": 66.0625,
+        "y": -105.34375,
+        "z": 27.09375
+      },
+      "total_profit": 356860
+    },
+    {
+      "commodities": [
+        {
+          "amount": 7,
+          "destination_commodity": {
+            "buy_price": 0,
+            "demand": 666974,
+            "sell_price": 12811,
+            "supply": 0
+          },
+          "name": "Bauxite",
+          "profit": 10550,
+          "source_commodity": {
+            "buy_price": 2261,
+            "demand": 1,
+            "sell_price": 2163,
+            "supply": 7914
+          },
+          "total_profit": 73850
+        }
+      ],
+      "cumulative_profit": 519645,
+      "destination": {
+        "distance_to_arrival": 617,
+        "market_id": 3222823680,
+        "market_updated_at": 1793065834,
+        "station": "Titius Station",
+        "system": "Cemiess",
+        "system_id64": 1522322606443,
+        "x": 66.0625,
+        "y": -105.34375,
+        "z": 27.09375
+      },
+      "distance": 45.8412469493905,
+      "source": {
+        "distance_to_arrival": 261196,
+        "market_id": 4371300611,
+        "market_updated_at": 1792950424,
+        "station": "Hynek Enterprise",
+        "system": "ICZ IW-W c1-17",
+        "system_id64": 4756978176730,
+        "x": 109.25,
+        "y": -118.5625,
+        "z": 34.9375
+      },
+      "total_profit": 73850
+    },
+    {
+      "commodities": [
+        {
+          "amount": 7,
+          "destination_commodity": {
+            "buy_price": 0,
+            "demand": 17442,
+            "sell_price": 56368,
+            "supply": 0
+          },
+          "name": "Gold",
+          "profit": 51343,
+          "source_commodity": {
+            "buy_price": 5025,
+            "demand": 1,
+            "sell_price": 4919,
+            "supply": 26
+          },
+          "total_profit": 359401
+        }
+      ],
+      "cumulative_profit": 879046,
+      "destination": {
+        "distance_to_arrival": 669,
+        "market_id": 4226983939,
+        "market_updated_at": 1793049301,
+        "station": "Guabanseh",
+        "system": "Shui Wei Sector KN-S b4-5",
+        "system_id64": 11666875884985,
+        "x": 67.28125,
+        "y": -61.9375,
+        "z": 37.125
+      },
+      "distance": 44.5669593666373,
+      "source": {
+        "distance_to_arrival": 617,
+        "market_id": 3222823680,
+        "market_updated_at": 1793065834,
+        "station": "Titius Station",
+        "system": "Cemiess",
+        "system_id64": 1522322606443,
+        "x": 66.0625,
+        "y": -105.34375,
+        "z": 27.09375
+      },
+      "total_profit": 359401
+    }
+  ],
+  "state": "completed",
+  "status": "ok",
+  "updated_at": "2026-10-27T03:11:22"
+}

@@ -12,17 +12,17 @@ import { Vector3 } from 'three';
 export const SAGITTARIUS_A_STAR = Object.freeze({ x: 25.21875, y: -20.90625, z: 25899.96875 });
 
 export function galacticToScene(galacticCoordinates, targetVector = new Vector3()) {
-    return targetVector.set(galacticCoordinates.x, galacticCoordinates.y, -galacticCoordinates.z);
+  return targetVector.set(galacticCoordinates.x, galacticCoordinates.y, -galacticCoordinates.z);
 }
 
 export function sceneToGalactic(sceneVector) {
-    return { x: sceneVector.x, y: sceneVector.y, z: -sceneVector.z };
+  return { x: sceneVector.x, y: sceneVector.y, z: -sceneVector.z };
 }
 
 export function galacticZToSceneZ(galacticZ) {
-    return -galacticZ;
+  return -galacticZ;
 }
 
 export function sceneZToGalacticZ(sceneZ) {
-    return -sceneZ;
+  return -sceneZ;
 }

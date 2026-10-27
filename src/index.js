@@ -1,5 +1,6 @@
 export { GalaxyMap, DEFAULT_OPTIONS } from './GalaxyMap.js';
 export { COMMAND_TYPES, validateCommand } from './commands.js';
+export { DEFAULT_TEXT } from './mapText.js';
 export { DEFAULT_USER_INTERFACE } from './userInterface.js';
 export { ROUTE_STOP_COLOURS, ROUTE_STOP_LABELS, routeStopLegend, routeStopMarker, routeSystemsFromSpanshResult } from './spanshRoute.js';
 export { BACKDROP_STYLES } from './backdrop/GalaxyBackdrop.js';

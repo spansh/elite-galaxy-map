@@ -1,38 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Galaxy Map Demo</title>
-        <style>
-            html, body {
-                margin: 0;
-                height: 100%;
-                background: #03060a;
-            }
-            #galaxy-map {
-                position: fixed;
-                inset: 0;
-            }
-            /* The demo's own extra: a frame rate meter, not part of the map. */
-            #stats-button {
-                position: fixed;
-                right: 12px;
-                bottom: 12px;
-                padding: 4px 10px;
-                background: #13212a;
-                color: #c9dbe6;
-                border: 1px solid #22323a;
-                border-radius: 4px;
-                font: 13px system-ui, sans-serif;
-                cursor: pointer;
-            }
-        </style>
-    </head>
-    <body>
-        <!-- The control panel is built by the map itself. -->
-        <div id="galaxy-map"></div>
-        <button type="button" id="stats-button">Stats</button>
-        <script type="module" src="./demo.js"></script>
-    </body>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Galaxy Map Demo</title>
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #03060a;
+      }
+      #galaxy-map {
+        position: fixed;
+        inset: 0;
+      }
+      /* The demo's own extra: a frame rate meter, not part of the map. */
+      #stats-button {
+        position: fixed;
+        right: 12px;
+        bottom: 12px;
+        padding: 4px 10px;
+        background: #13212a;
+        color: #c9dbe6;
+        border: 1px solid #22323a;
+        border-radius: 4px;
+        font: 13px system-ui, sans-serif;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The control panel is built by the map itself. -->
+    <div id="galaxy-map"></div>
+    <button type="button" id="stats-button">Stats</button>
+    <script type="module" src="./demo.js"></script>
+  </body>
 </html>

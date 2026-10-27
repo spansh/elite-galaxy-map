@@ -6,9 +6,9 @@ import type { DefineLayerCommand } from './index';
 export type StarClassLayer = Omit<DefineLayerCommand, 'type'> & { label: string; order: number; colour: string };
 
 export const STAR_CLASS_LAYERS: Readonly<Record<
-    'o' | 'b' | 'a' | 'f' | 'g' | 'k' | 'm' | 'l' | 't' | 'y'
-    | 'young' | 'wolfRayet' | 'carbon' | 'sType' | 'whiteDwarf' | 'neutron' | 'blackHole' | 'other',
-    StarClassLayer
+  'o' | 'b' | 'a' | 'f' | 'g' | 'k' | 'm' | 'l' | 't' | 'y'
+  | 'young' | 'wolfRayet' | 'carbon' | 'sType' | 'whiteDwarf' | 'neutron' | 'blackHole' | 'other',
+  StarClassLayer
 >>;
 
 /** The layer for a main star type (as in Spansh dumps), or the "other" layer if unrecognised. */
